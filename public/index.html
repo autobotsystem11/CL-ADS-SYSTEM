@@ -35,6 +35,14 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
         数据录入
       </button>
+      <button class="nav-item" onclick="showTab('orders')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/></svg>
+        订单管理
+      </button>
+      <button class="nav-item" onclick="showTab('finance')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        财务概览
+      </button>
     </nav>
   </aside>
 
@@ -193,6 +201,110 @@
             /addmetrics &lt;追踪代码&gt; &lt;发送数&gt; &lt;新增订阅&gt;
           </code>
           <p class="text-muted mt-2" style="font-size:12px">例：/addmetrics abc1234 1200 58</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Orders Tab ──────────────────────────────── -->
+    <div id="tab-orders" class="hidden">
+      <div class="topbar">
+        <h1>🧾 订单管理</h1>
+        <div class="topbar-actions">
+          <select id="order-filter" onchange="filterOrders()" style="width:auto">
+            <option value="all">全部订单</option>
+            <option value="pending">待审批</option>
+            <option value="approved">已批准</option>
+            <option value="rejected">已拒绝</option>
+          </select>
+        </div>
+      </div>
+      <div class="content">
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>客户姓名</th>
+                  <th>联系方式</th>
+                  <th>套餐</th>
+                  <th>金额</th>
+                  <th>折扣</th>
+                  <th>来源</th>
+                  <th>状态</th>
+                  <th>下单时间</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="orders-table">
+                <tr><td colspan="9" class="empty-state">加载中...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Finance Tab ─────────────────────────────── -->
+    <div id="tab-finance" class="hidden">
+      <div class="topbar"><h1>💰 财务概览</h1></div>
+      <div class="content">
+        <!-- Finance stat cards -->
+        <div class="stats-grid" id="finance-cards">
+          <div class="stat-card"><div class="stat-label">已收款</div><div class="stat-value stat-green" id="f-revenue">—</div><div class="stat-sub">已批准订单</div></div>
+          <div class="stat-card"><div class="stat-label">待确认</div><div class="stat-value stat-orange" id="f-pending">—</div><div class="stat-sub">待审批订单</div></div>
+          <div class="stat-card"><div class="stat-label">总开销</div><div class="stat-value stat-blue" id="f-expenses">—</div><div class="stat-sub">所有支出</div></div>
+          <div class="stat-card"><div class="stat-label">净利润</div><div class="stat-value stat-purple" id="f-profit">—</div><div class="stat-sub">已收款 − 开销</div></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start" class="section-gap">
+          <!-- Expenses table -->
+          <div class="card">
+            <div class="card-header"><div class="card-title">支出记录</div></div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>日期</th><th>描述</th><th>类别</th><th>金额 (RM)</th><th>操作</th></tr>
+                </thead>
+                <tbody id="expenses-table">
+                  <tr><td colspan="5" class="empty-state">暂无支出记录</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Add expense form -->
+          <div class="card">
+            <div class="card-header"><div class="card-title">➕ 新增支出</div></div>
+            <form id="expense-form">
+              <div class="form-grid" style="grid-template-columns:1fr">
+                <div class="form-group">
+                  <label>描述 *</label>
+                  <input type="text" id="e-desc" placeholder="例：广告平台费" required>
+                </div>
+                <div class="form-group">
+                  <label>金额 (RM) *</label>
+                  <input type="number" id="e-amount" min="0" step="0.01" placeholder="例：500" required>
+                </div>
+                <div class="form-group">
+                  <label>日期 *</label>
+                  <input type="date" id="e-date" required>
+                </div>
+                <div class="form-group">
+                  <label>类别</label>
+                  <select id="e-category">
+                    <option value="general">一般</option>
+                    <option value="ads">广告投放</option>
+                    <option value="tools">工具/软件</option>
+                    <option value="salary">薪资</option>
+                    <option value="other">其他</option>
+                  </select>
+                </div>
+              </div>
+              <div class="modal-footer" style="margin-top:16px">
+                <button type="submit" class="btn btn-primary">💾 保存支出</button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>

@@ -95,7 +95,24 @@ async function sendReport(dateStr) {
   const text = await buildReportText(dateStr);
   await bot.sendMessage(CHAT_ID, text, { parse_mode: 'Markdown' });
 }
-module.exports = { sendReport };
+module.exports = { sendReport, sendOrderAlert };
+
+// ── New order alert ───────────────────────────────────────────
+async function sendOrderAlert(order) {
+  if (!CHAT_ID) return;
+  const emoji = order.source === 'calculator' ? '🧮' : '🌐';
+  const text =
+    `🔔 *新订单！*\n\n` +
+    `${emoji} 来源：${order.source === 'calculator' ? '免费预测工具' : '官网'}\n` +
+    `👤 客户：${order.customer_name}\n` +
+    `📱 联系：${order.customer_contact}\n` +
+    `📦 套餐：${order.package_name}\n` +
+    `💰 金额：RM ${Number(order.final_price).toLocaleString()}` +
+    (order.discount_pct ? ` (享 ${order.discount_pct}% 折扣)` : '') + `\n` +
+    (order.business_description ? `📝 备注：${order.business_description}\n` : '') +
+    `\n✅ 请登入后台审批订单`;
+  await bot.sendMessage(CHAT_ID, text, { parse_mode: 'Markdown' });
+}
 
 // ── Bot commands ──────────────────────────────────────────────
 

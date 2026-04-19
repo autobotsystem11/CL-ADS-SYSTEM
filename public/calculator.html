@@ -654,6 +654,117 @@
       </div>
     </div>
 
+    <!-- ── 12-Hour Discount Section ── -->
+    <div id="discount-section" style="margin:0 auto 32px;max-width:700px;padding:0 16px">
+      <div style="background:linear-gradient(135deg,rgba(249,115,22,0.12),rgba(168,85,247,0.08));border:1px solid rgba(249,115,22,0.35);border-radius:20px;padding:32px 28px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#f97316,#ec4899,#a855f7)"></div>
+        <div style="text-align:center;margin-bottom:24px">
+          <div style="font-size:28px;margin-bottom:8px">🔥</div>
+          <h3 style="font-size:20px;font-weight:800;color:#fff;margin-bottom:6px">限时专属优惠！</h3>
+          <p style="color:#94a3b8;font-size:14px">完成预测后 <strong style="color:#f97316">12小时内</strong> 下单，立享 <strong style="color:#f97316;font-size:16px">10% 折扣</strong></p>
+          <div style="display:inline-flex;align-items:center;gap:8px;margin-top:12px;background:rgba(0,0,0,0.3);padding:8px 20px;border-radius:50px;font-size:13px;color:#f1f5f9">
+            ⏱ 优惠截止：<span id="countdown-display" style="font-weight:700;color:#f97316;font-variant-numeric:tabular-nums">12:00:00</span>
+          </div>
+        </div>
+
+        <!-- Package cards -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px" id="package-grid">
+          <!-- Starter -->
+          <div class="pkg-card" data-name="初创套餐" data-price="800" data-final="720" onclick="selectPackage(this)"
+            style="background:var(--bg3);border:2px solid var(--border);border-radius:14px;padding:20px 16px;cursor:pointer;text-align:center;transition:all 0.2s">
+            <div style="font-size:22px;margin-bottom:8px">🌱</div>
+            <div style="font-weight:700;font-size:15px;margin-bottom:4px">初创套餐</div>
+            <div style="font-size:12px;color:#64748b;margin-bottom:12px">1个月 Telegram 推广</div>
+            <div style="color:#64748b;text-decoration:line-through;font-size:12px">RM 800</div>
+            <div style="color:#f97316;font-size:22px;font-weight:800">RM 720</div>
+            <div style="background:#f97316;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:50px;margin-top:8px;display:inline-block">省 RM 80</div>
+          </div>
+          <!-- Growth -->
+          <div class="pkg-card" data-name="成长套餐" data-price="1500" data-final="1350" onclick="selectPackage(this)"
+            style="background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(59,130,246,0.1));border:2px solid rgba(168,85,247,0.4);border-radius:14px;padding:20px 16px;cursor:pointer;text-align:center;transition:all 0.2s;position:relative">
+            <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,#a855f7,#3b82f6);color:#fff;font-size:10px;font-weight:700;padding:3px 12px;border-radius:50px;white-space:nowrap">⭐ 最受欢迎</div>
+            <div style="font-size:22px;margin-bottom:8px">🚀</div>
+            <div style="font-weight:700;font-size:15px;margin-bottom:4px">成长套餐</div>
+            <div style="font-size:12px;color:#64748b;margin-bottom:12px">2个月 + 2平台</div>
+            <div style="color:#64748b;text-decoration:line-through;font-size:12px">RM 1,500</div>
+            <div style="color:#a855f7;font-size:22px;font-weight:800">RM 1,350</div>
+            <div style="background:#a855f7;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:50px;margin-top:8px;display:inline-block">省 RM 150</div>
+          </div>
+          <!-- Blast -->
+          <div class="pkg-card" data-name="爆发套餐" data-price="3000" data-final="2700" onclick="selectPackage(this)"
+            style="background:linear-gradient(135deg,rgba(249,115,22,0.12),rgba(236,72,153,0.08));border:2px solid rgba(236,72,153,0.35);border-radius:14px;padding:20px 16px;cursor:pointer;text-align:center;transition:all 0.2s">
+            <div style="font-size:22px;margin-bottom:8px">💥</div>
+            <div style="font-weight:700;font-size:15px;margin-bottom:4px">爆发套餐</div>
+            <div style="font-size:12px;color:#64748b;margin-bottom:12px">3个月 + 全平台 + 内容制作</div>
+            <div style="color:#64748b;text-decoration:line-through;font-size:12px">RM 3,000</div>
+            <div style="color:#ec4899;font-size:22px;font-weight:800">RM 2,700</div>
+            <div style="background:#ec4899;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:50px;margin-top:8px;display:inline-block">省 RM 300</div>
+          </div>
+        </div>
+        <p style="text-align:center;font-size:12px;color:#64748b">👆 点击套餐立即下单</p>
+      </div>
+    </div>
+
+    <!-- Order Form Modal -->
+    <div id="order-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px" class="hidden">
+      <div style="background:#13131f;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px;max-width:480px;width:100%;position:relative;max-height:90vh;overflow-y:auto">
+        <button onclick="closeOrderForm()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#64748b;font-size:20px;cursor:pointer;line-height:1">✕</button>
+        <h3 style="font-size:18px;font-weight:700;margin-bottom:4px" id="form-pkg-title">下单</h3>
+        <p style="color:#64748b;font-size:13px;margin-bottom:24px" id="form-pkg-price"></p>
+
+        <div id="order-form-wrap">
+          <form id="calc-order-form">
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div>
+                <label style="display:block;font-size:13px;color:#94a3b8;margin-bottom:6px">姓名 *</label>
+                <input type="text" id="o-name" placeholder="你的名字" required
+                  style="width:100%;background:#1c1c2e;border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 14px;color:#f1f5f9;font-size:14px;outline:none">
+              </div>
+              <div>
+                <label style="display:block;font-size:13px;color:#94a3b8;margin-bottom:6px">WhatsApp / 联系方式 *</label>
+                <input type="text" id="o-contact" placeholder="+601X-XXXXXXX" required
+                  style="width:100%;background:#1c1c2e;border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 14px;color:#f1f5f9;font-size:14px;outline:none">
+              </div>
+              <div>
+                <label style="display:block;font-size:13px;color:#94a3b8;margin-bottom:6px">简述你的业务（可选）</label>
+                <textarea id="o-desc" placeholder="例：我卖手工皂，主打天然原料..." rows="3"
+                  style="width:100%;background:#1c1c2e;border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 14px;color:#f1f5f9;font-size:14px;outline:none;resize:vertical"></textarea>
+              </div>
+            </div>
+            <button type="submit" style="margin-top:20px;width:100%;background:linear-gradient(135deg,#f97316,#ec4899);color:#fff;font-weight:700;font-size:15px;padding:14px;border:none;border-radius:12px;cursor:pointer">
+              确认下单 →
+            </button>
+          </form>
+        </div>
+
+        <!-- Payment info (shown after order) -->
+        <div id="payment-info" style="display:none">
+          <div style="text-align:center;margin-bottom:20px">
+            <div style="font-size:32px;margin-bottom:8px">✅</div>
+            <h4 style="font-size:16px;font-weight:700;color:#22c55e;margin-bottom:4px">订单已提交！</h4>
+            <p style="color:#64748b;font-size:13px">请在 24 小时内完成转账，我们将尽快联系你</p>
+          </div>
+          <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:14px;padding:20px">
+            <div style="font-size:13px;font-weight:700;color:#22c55e;margin-bottom:16px;text-align:center">🏦 银行转账详情</div>
+            <div style="display:flex;flex-direction:column;gap:10px;font-size:14px">
+              <div style="display:flex;justify-content:space-between"><span style="color:#64748b">银行</span><strong>Maybank</strong></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:#64748b">账户名</span><strong>CL SDN BHD</strong></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:#64748b">账户号</span><strong style="color:#f97316;letter-spacing:1px">5612-3456-7890</strong></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:#64748b">转账金额</span><strong id="pay-amount" style="color:#22c55e;font-size:16px"></strong></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:#64748b">备注</span><strong id="pay-ref"></strong></div>
+            </div>
+          </div>
+          <div style="margin-top:16px;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);border-radius:10px;padding:12px;font-size:12px;color:#94a3b8;text-align:center">
+            ⚠️ 付款后请 WhatsApp 我们发送截图确认<br>
+            <a href="https://wa.me/60YOUR_WHATSAPP_NUMBER" target="_blank" style="color:#f97316;font-weight:700;text-decoration:none">📱 +60 YOUR-NUMBER</a>
+          </div>
+          <button onclick="closeOrderForm()" style="margin-top:16px;width:100%;background:#1c1c2e;color:#f1f5f9;font-weight:600;font-size:14px;padding:12px;border:1px solid rgba(255,255,255,0.1);border-radius:10px;cursor:pointer">
+            关闭
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="restart-link" onclick="restartWizard()">← 重新预测</div>
   </div>
 
@@ -903,6 +1014,107 @@ document.head.appendChild(style);
 
 // Init
 updateProgress(1);
+
+/* ── 12-Hour Discount Countdown ── */
+(function initCountdown() {
+  const KEY = 'calc_discount_deadline';
+  let deadline = sessionStorage.getItem(KEY);
+  if (!deadline) {
+    deadline = Date.now() + 12 * 60 * 60 * 1000;
+    sessionStorage.setItem(KEY, deadline);
+  }
+  deadline = parseInt(deadline);
+
+  function tick() {
+    const remaining = deadline - Date.now();
+    const el = document.getElementById('countdown-display');
+    if (!el) return;
+    if (remaining <= 0) {
+      el.textContent = '已过期';
+      el.style.color = '#ef4444';
+      document.getElementById('discount-section').style.opacity = '0.4';
+      return;
+    }
+    const h = Math.floor(remaining / 3600000).toString().padStart(2, '0');
+    const m = Math.floor((remaining % 3600000) / 60000).toString().padStart(2, '0');
+    const s = Math.floor((remaining % 60000) / 1000).toString().padStart(2, '0');
+    el.textContent = `${h}:${m}:${s}`;
+    setTimeout(tick, 1000);
+  }
+  tick();
+})();
+
+/* ── Package Selection & Order ── */
+let selectedPackage = null;
+
+function selectPackage(card) {
+  selectedPackage = {
+    name:   card.dataset.name,
+    price:  parseFloat(card.dataset.price),
+    final:  parseFloat(card.dataset.final),
+    disc:   10,
+  };
+  document.getElementById('form-pkg-title').textContent = `📦 ${selectedPackage.name}`;
+  document.getElementById('form-pkg-price').textContent =
+    `RM ${selectedPackage.price.toLocaleString()} → RM ${selectedPackage.final.toLocaleString()} (享 10% 折扣)`;
+
+  document.getElementById('order-form-wrap').style.display = 'block';
+  document.getElementById('payment-info').style.display = 'none';
+  document.getElementById('calc-order-form').reset();
+
+  const overlay = document.getElementById('order-overlay');
+  overlay.classList.remove('hidden');
+  overlay.style.display = 'flex';
+}
+
+function closeOrderForm() {
+  const overlay = document.getElementById('order-overlay');
+  overlay.style.display = 'none';
+  overlay.classList.add('hidden');
+}
+
+document.getElementById('order-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeOrderForm();
+});
+
+document.getElementById('calc-order-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = this.querySelector('button[type=submit]');
+  btn.textContent = '提交中...';
+  btn.disabled = true;
+
+  const name    = document.getElementById('o-name').value.trim();
+  const contact = document.getElementById('o-contact').value.trim();
+  const desc    = document.getElementById('o-desc').value.trim();
+
+  try {
+    const res = await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customer_name:        name,
+        customer_contact:     contact,
+        package_name:         selectedPackage.name,
+        package_price:        selectedPackage.price,
+        final_price:          selectedPackage.final,
+        discount_pct:         selectedPackage.disc,
+        business_description: desc || null,
+        source:               'calculator',
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '提交失败');
+
+    document.getElementById('pay-amount').textContent = `RM ${selectedPackage.final.toLocaleString()}`;
+    document.getElementById('pay-ref').textContent = name;
+    document.getElementById('order-form-wrap').style.display = 'none';
+    document.getElementById('payment-info').style.display = 'block';
+  } catch (err) {
+    alert('❌ 提交失败：' + err.message);
+    btn.textContent = '确认下单 →';
+    btn.disabled = false;
+  }
+});
 </script>
 </body>
 </html>

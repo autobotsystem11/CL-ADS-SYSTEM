@@ -7,6 +7,8 @@ let clickChart = null;
 document.addEventListener('DOMContentLoaded', () => {
   // Set today as default date in metrics form
   document.getElementById('m-date').value = today();
+  const eDate = document.getElementById('e-date');
+  if (eDate) eDate.value = today();
   loadDashboard();
   loadClients();
   loadCampaigns();
@@ -26,6 +28,8 @@ function showTab(name) {
   if (name === 'dashboard') loadDashboard();
   if (name === 'clients')   renderClientsTable();
   if (name === 'campaigns') renderCampaignsTable();
+  if (name === 'orders')    loadOrders();
+  if (name === 'finance')   loadFinance();
 }
 
 /* ── Dashboard ──────────────────────────────────────────── */
@@ -251,6 +255,26 @@ function setupForms() {
     }
   });
 
+  // Expense form
+  document.getElementById('expense-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const res = await apiFetch('/api/expenses', {
+      method: 'POST',
+      body: JSON.stringify({
+        description: val('e-desc'),
+        amount:      parseFloat(val('e-amount')),
+        date:        val('e-date'),
+        category:    val('e-category'),
+      }),
+    });
+    if (res) {
+      toast('支出已记录 ✅', 'success');
+      e.target.reset();
+      document.getElementById('e-date').value = today();
+      loadFinance();
+    }
+  });
+
   // Metrics form
   document.getElementById('metrics-form').addEventListener('submit', async e => {
     e.preventDefault();
@@ -289,6 +313,118 @@ function populateCampaignSelect() {
   if (!el) return;
   el.innerHTML = `<option value="">— 选择项目 —</option>` +
     campaigns.map(c => `<option value="${c.id}">${esc(c.clients?.name || '')} — ${esc(c.name)} (${c.tracking_code})</option>`).join('');
+}
+
+/* ── Orders ─────────────────────────────────────────────── */
+let allOrders = [];
+
+async function loadOrders() {
+  allOrders = await apiFetch('/api/orders') || [];
+  filterOrders();
+}
+
+function filterOrders() {
+  const filter = document.getElementById('order-filter')?.value || 'all';
+  const filtered = filter === 'all' ? allOrders : allOrders.filter(o => o.status === filter);
+  renderOrdersTable(filtered);
+}
+
+function renderOrdersTable(orders) {
+  const tbody = document.getElementById('orders-table');
+  if (!tbody) return;
+  if (orders.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state">暂无订单</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = orders.map(o => {
+    const statusBadge = {
+      pending:  '<span class="badge badge-orange">待审批</span>',
+      approved: '<span class="badge badge-green">已批准</span>',
+      rejected: '<span class="badge" style="background:rgba(239,68,68,0.15);color:#ef4444">已拒绝</span>',
+    }[o.status] || o.status;
+    const sourceBadge = o.source === 'calculator'
+      ? '<span class="badge badge-purple">🧮 预测工具</span>'
+      : '<span class="badge badge-blue">🌐 官网</span>';
+    const actions = o.status === 'pending'
+      ? `<div style="display:flex;gap:6px">
+           <button class="btn btn-sm" style="background:#22c55e;color:#fff" onclick="updateOrder('${o.id}','approved')">批准</button>
+           <button class="btn btn-danger btn-sm" onclick="updateOrder('${o.id}','rejected')">拒绝</button>
+         </div>`
+      : '<span class="text-muted" style="font-size:12px">—</span>';
+    const disc = o.discount_pct ? `${o.discount_pct}%` : '—';
+    return `<tr>
+      <td><strong>${esc(o.customer_name)}</strong></td>
+      <td class="text-muted">${esc(o.customer_contact)}</td>
+      <td>${esc(o.package_name)}</td>
+      <td><strong class="text-orange">RM ${Number(o.final_price).toLocaleString()}</strong></td>
+      <td>${disc}</td>
+      <td>${sourceBadge}</td>
+      <td>${statusBadge}</td>
+      <td class="text-muted" style="font-size:12px">${new Date(o.created_at).toLocaleString('zh-CN')}</td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function updateOrder(id, status) {
+  const label = status === 'approved' ? '批准' : '拒绝';
+  if (!confirm(`确定${label}此订单？`)) return;
+  const res = await apiFetch(`/api/orders/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+  if (res) {
+    toast(`订单已${label} ✅`, 'success');
+    await loadOrders();
+    await loadFinance();
+  }
+}
+
+/* ── Finance ────────────────────────────────────────────── */
+async function loadFinance() {
+  const [finance, expenses] = await Promise.all([
+    apiFetch('/api/finance'),
+    apiFetch('/api/expenses'),
+  ]);
+  if (finance) {
+    setText('f-revenue',  `RM ${Number(finance.revenue).toLocaleString()}`);
+    setText('f-pending',  `RM ${Number(finance.pending).toLocaleString()}`);
+    setText('f-expenses', `RM ${Number(finance.expenses).toLocaleString()}`);
+    const profit = finance.profit;
+    const el = document.getElementById('f-profit');
+    if (el) {
+      el.textContent = `RM ${Number(profit).toLocaleString()}`;
+      el.className = `stat-value ${profit >= 0 ? 'stat-green' : 'stat-blue'}`;
+      if (profit < 0) el.style.color = '#ef4444';
+    }
+  }
+  renderExpensesTable(expenses || []);
+}
+
+function renderExpensesTable(expenses) {
+  const tbody = document.getElementById('expenses-table');
+  if (!tbody) return;
+  if (expenses.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">暂无支出记录</div></td></tr>`;
+    return;
+  }
+  const catLabel = { general:'一般', ads:'广告投放', tools:'工具/软件', salary:'薪资', other:'其他' };
+  tbody.innerHTML = expenses.map(e => `
+    <tr>
+      <td class="text-muted" style="font-size:12px">${e.date}</td>
+      <td>${esc(e.description)}</td>
+      <td><span class="badge badge-blue">${catLabel[e.category] || e.category}</span></td>
+      <td><strong>RM ${Number(e.amount).toLocaleString()}</strong></td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteExpense('${e.id}')">删除</button></td>
+    </tr>
+  `).join('');
+}
+
+async function deleteExpense(id) {
+  if (!confirm('确定删除此支出记录？')) return;
+  await apiFetch(`/api/expenses/${id}`, { method: 'DELETE' });
+  toast('已删除', 'success');
+  loadFinance();
 }
 
 /* ── Helpers ────────────────────────────────────────────── */

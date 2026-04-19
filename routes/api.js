@@ -211,4 +211,96 @@ router.get('/clicks-by-day/:campaignId', async (req, res) => {
   res.json(byDay);
 });
 
+// ── Orders ────────────────────────────────────────────────────
+
+// POST /api/orders
+router.post('/orders', async (req, res) => {
+  const { customer_name, customer_contact, package_name, package_price, final_price, discount_pct, business_description, source } = req.body;
+  if (!customer_name || !customer_contact || !package_name)
+    return res.status(400).json({ error: 'customer_name, customer_contact, package_name required' });
+  const { data, error } = await supabase
+    .from('orders')
+    .insert({ customer_name, customer_contact, package_name, package_price, final_price, discount_pct: discount_pct || 0, business_description, source: source || 'website' })
+    .select()
+    .single();
+  if (error) return res.status(500).json({ error: error.message });
+
+  // Notify via Telegram bot
+  try {
+    const bot = require('../bot');
+    if (bot.sendOrderAlert) bot.sendOrderAlert(data);
+  } catch (_) {}
+
+  res.status(201).json(data);
+});
+
+// GET /api/orders
+router.get('/orders', async (req, res) => {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+// PATCH /api/orders/:id  { status: 'approved'|'rejected' }
+router.patch('/orders/:id', async (req, res) => {
+  const { status } = req.body;
+  const { data, error } = await supabase
+    .from('orders')
+    .update({ status })
+    .eq('id', req.params.id)
+    .select()
+    .single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+// ── Expenses ──────────────────────────────────────────────────
+
+// GET /api/expenses
+router.get('/expenses', async (req, res) => {
+  const { data, error } = await supabase
+    .from('expenses')
+    .select('*')
+    .order('date', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+// POST /api/expenses
+router.post('/expenses', async (req, res) => {
+  const { description, amount, date, category } = req.body;
+  if (!description || !amount || !date)
+    return res.status(400).json({ error: 'description, amount, date required' });
+  const { data, error } = await supabase
+    .from('expenses')
+    .insert({ description, amount, date, category: category || 'general' })
+    .select()
+    .single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(201).json(data);
+});
+
+// DELETE /api/expenses/:id
+router.delete('/expenses/:id', async (req, res) => {
+  const { error } = await supabase.from('expenses').delete().eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
+});
+
+// GET /api/finance — revenue, expenses, profit summary
+router.get('/finance', async (req, res) => {
+  const [{ data: orders }, { data: expenses }] = await Promise.all([
+    supabase.from('orders').select('final_price, status, created_at'),
+    supabase.from('expenses').select('amount'),
+  ]);
+  const revenue    = (orders || []).filter(o => o.status === 'approved').reduce((s, o) => s + Number(o.final_price), 0);
+  const pending    = (orders || []).filter(o => o.status === 'pending').reduce((s, o) => s + Number(o.final_price), 0);
+  const totalExp   = (expenses || []).reduce((s, e) => s + Number(e.amount), 0);
+  const profit     = revenue - totalExp;
+  res.json({ revenue, pending, expenses: totalExp, profit, orderCount: (orders || []).length });
+});
+
 module.exports = router;
