@@ -10,6 +10,55 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
+
+<!-- ── Admin Login Overlay ─────────────────────────────────── -->
+<div id="admin-gate" style="display:none;position:fixed;inset:0;background:#0a0a14;z-index:9999;display:flex;align-items:center;justify-content:center">
+  <div style="background:#13131f;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:40px;width:100%;max-width:380px;text-align:center">
+    <div style="font-size:36px;margin-bottom:12px">🔐</div>
+    <h2 style="color:#fff;font-size:20px;font-weight:800;margin-bottom:4px">管理后台</h2>
+    <p style="color:#64748b;font-size:13px;margin-bottom:28px">CL SDN BHD · 仅限内部使用</p>
+    <input id="admin-pw-input" type="password" placeholder="输入管理员密码"
+      style="width:100%;background:#1c1c2e;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:12px 16px;color:#f1f5f9;font-size:15px;outline:none;margin-bottom:12px;box-sizing:border-box"
+      onkeydown="if(event.key==='Enter')adminLogin()">
+    <button onclick="adminLogin()"
+      style="width:100%;background:linear-gradient(135deg,#f97316,#ec4899);border:none;border-radius:12px;padding:13px;color:#fff;font-size:15px;font-weight:700;cursor:pointer">
+      登入 →
+    </button>
+    <p id="admin-err" style="color:#f87171;font-size:13px;margin-top:12px;display:none">密码错误，请再试</p>
+  </div>
+</div>
+
+<script>
+(function(){
+  const gate = document.getElementById('admin-gate');
+  const token = localStorage.getItem('admin_token');
+  if (!token) { gate.style.display = 'flex'; return; }
+  // Verify token still valid
+  fetch('/auth/admin-verify', { headers: { 'x-admin-token': token } })
+    .then(r => { if (!r.ok) { localStorage.removeItem('admin_token'); gate.style.display = 'flex'; } })
+    .catch(() => { gate.style.display = 'flex'; });
+})();
+
+async function adminLogin() {
+  const pw = document.getElementById('admin-pw-input').value;
+  const err = document.getElementById('admin-err');
+  err.style.display = 'none';
+  const res = await fetch('/auth/admin-login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: pw })
+  });
+  if (res.ok) {
+    const { token } = await res.json();
+    localStorage.setItem('admin_token', token);
+    document.getElementById('admin-gate').style.display = 'none';
+  } else {
+    err.style.display = 'block';
+    document.getElementById('admin-pw-input').value = '';
+  }
+}
+</script>
+
 <div class="app">
 
   <!-- Sidebar -->

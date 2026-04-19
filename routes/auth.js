@@ -45,6 +45,29 @@ router.get('/me', async (req, res) => {
   res.json(client);
 });
 
+// POST /auth/admin-login  { password }
+router.post('/admin-login', (req, res) => {
+  const { password } = req.body;
+  const adminPass = process.env.ADMIN_PASSWORD;
+  if (!adminPass) return res.status(500).json({ error: 'ADMIN_PASSWORD not configured' });
+  if (password !== adminPass) return res.status(401).json({ error: '密码错误' });
+  // Return a signed token: HMAC of a timestamp so we can verify without DB
+  const ts = Date.now().toString();
+  const sig = crypto.createHmac('sha256', adminPass).update(ts).digest('hex');
+  res.json({ token: `${ts}.${sig}` });
+});
+
+// GET /auth/admin-verify  — check admin token
+router.get('/admin-verify', (req, res) => {
+  const token = req.headers['x-admin-token'];
+  const adminPass = process.env.ADMIN_PASSWORD;
+  if (!token || !adminPass) return res.status(401).json({ ok: false });
+  const [ts, sig] = token.split('.');
+  const expected = crypto.createHmac('sha256', adminPass).update(ts).digest('hex');
+  if (sig !== expected) return res.status(401).json({ ok: false });
+  res.json({ ok: true });
+});
+
 // Helper exported for api.js to call on order approval
 async function createClientCredentials(clientId, clientName) {
   // Check if already has credentials
