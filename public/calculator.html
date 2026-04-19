@@ -705,16 +705,14 @@
       </div>
     </div>
 
-    <!-- Order Form Modal -->
-    <div id="order-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px" class="hidden">
-      <div style="background:#13131f;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px;max-width:480px;width:100%;position:relative;max-height:90vh;overflow-y:auto">
-        <button onclick="closeOrderForm()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#64748b;font-size:20px;cursor:pointer;line-height:1">✕</button>
-        <h3 style="font-size:18px;font-weight:700;margin-bottom:4px" id="form-pkg-title">下单</h3>
-        <p style="color:#64748b;font-size:13px;margin-bottom:24px" id="form-pkg-price"></p>
-
+    <!-- Inline Order Form (shown below packages after clicking) -->
+    <div id="inline-order-form" style="display:none;margin:0 auto 32px;max-width:700px;padding:0 16px">
+      <div style="background:#13131f;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:28px 24px">
         <div id="order-form-wrap">
+          <h3 style="font-size:17px;font-weight:700;margin-bottom:4px" id="form-pkg-title"></h3>
+          <p style="color:#64748b;font-size:13px;margin-bottom:20px" id="form-pkg-price"></p>
           <form id="calc-order-form">
-            <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
               <div>
                 <label style="display:block;font-size:13px;color:#94a3b8;margin-bottom:6px">姓名 *</label>
                 <input type="text" id="o-name" placeholder="你的名字" required
@@ -725,13 +723,13 @@
                 <input type="text" id="o-contact" placeholder="+601X-XXXXXXX" required
                   style="width:100%;background:#1c1c2e;border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 14px;color:#f1f5f9;font-size:14px;outline:none">
               </div>
-              <div>
-                <label style="display:block;font-size:13px;color:#94a3b8;margin-bottom:6px">简述你的业务（可选）</label>
-                <textarea id="o-desc" placeholder="例：我卖手工皂，主打天然原料..." rows="3"
-                  style="width:100%;background:#1c1c2e;border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 14px;color:#f1f5f9;font-size:14px;outline:none;resize:vertical"></textarea>
-              </div>
             </div>
-            <button type="submit" style="margin-top:20px;width:100%;background:linear-gradient(135deg,#f97316,#ec4899);color:#fff;font-weight:700;font-size:15px;padding:14px;border:none;border-radius:12px;cursor:pointer">
+            <div style="margin-top:14px">
+              <label style="display:block;font-size:13px;color:#94a3b8;margin-bottom:6px">简述你的业务（可选）</label>
+              <textarea id="o-desc" placeholder="例：我卖手工皂，主打天然原料..." rows="2"
+                style="width:100%;background:#1c1c2e;border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 14px;color:#f1f5f9;font-size:14px;outline:none;resize:none"></textarea>
+            </div>
+            <button type="submit" style="margin-top:16px;width:100%;background:linear-gradient(135deg,#f97316,#ec4899);color:#fff;font-weight:700;font-size:15px;padding:14px;border:none;border-radius:12px;cursor:pointer">
               确认下单 →
             </button>
           </form>
@@ -758,9 +756,6 @@
             ⚠️ 付款后请 WhatsApp 我们发送截图确认<br>
             <a href="https://wa.me/60YOUR_WHATSAPP_NUMBER" target="_blank" style="color:#f97316;font-weight:700;text-decoration:none">📱 +60 YOUR-NUMBER</a>
           </div>
-          <button onclick="closeOrderForm()" style="margin-top:16px;width:100%;background:#1c1c2e;color:#f1f5f9;font-weight:600;font-size:14px;padding:12px;border:1px solid rgba(255,255,255,0.1);border-radius:10px;cursor:pointer">
-            关闭
-          </button>
         </div>
       </div>
     </div>
@@ -1054,6 +1049,12 @@ function selectPackage(card) {
     final:  parseFloat(card.dataset.final),
     disc:   10,
   };
+
+  // Highlight selected card
+  document.querySelectorAll('.pkg-card').forEach(c => c.style.opacity = '0.6');
+  card.style.opacity = '1';
+  card.style.transform = 'scale(1.03)';
+
   document.getElementById('form-pkg-title').textContent = `📦 ${selectedPackage.name}`;
   document.getElementById('form-pkg-price').textContent =
     `RM ${selectedPackage.price.toLocaleString()} → RM ${selectedPackage.final.toLocaleString()} (享 10% 折扣)`;
@@ -1062,20 +1063,10 @@ function selectPackage(card) {
   document.getElementById('payment-info').style.display = 'none';
   document.getElementById('calc-order-form').reset();
 
-  const overlay = document.getElementById('order-overlay');
-  overlay.classList.remove('hidden');
-  overlay.style.display = 'flex';
+  const inlineForm = document.getElementById('inline-order-form');
+  inlineForm.style.display = 'block';
+  setTimeout(() => inlineForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
 }
-
-function closeOrderForm() {
-  const overlay = document.getElementById('order-overlay');
-  overlay.style.display = 'none';
-  overlay.classList.add('hidden');
-}
-
-document.getElementById('order-overlay').addEventListener('click', function(e) {
-  if (e.target === this) closeOrderForm();
-});
 
 document.getElementById('calc-order-form').addEventListener('submit', async function(e) {
   e.preventDefault();
