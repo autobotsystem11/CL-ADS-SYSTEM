@@ -2,8 +2,10 @@ require('dotenv').config();
 const express = require('express');
 const path    = require('path');
 
-const trackRouter = require('./routes/track');
-const apiRouter   = require('./routes/api');
+const trackRouter  = require('./routes/track');
+const apiRouter    = require('./routes/api');
+const { router: authRouter } = require('./routes/auth');
+const portalRouter = require('./routes/portal');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -20,8 +22,10 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── Routes ────────────────────────────────────────────────────
-app.use('/go',  trackRouter);   // tracking redirect links
-app.use('/api', apiRouter);     // REST API
+app.use('/go',     trackRouter);   // tracking redirect links
+app.use('/api',    apiRouter);     // REST API
+app.use('/auth',   authRouter);    // client auth (login/me)
+app.use('/portal', portalRouter);  // client portal stats API
 
 // ── Catch-all: serve index.html for /report page ─────────────
 app.get('/report', (req, res) => {
@@ -30,6 +34,14 @@ app.get('/report', (req, res) => {
 
 app.get('/calculator', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'calculator.html'));
+});
+
+// ── Client portal pages ───────────────────────────────────────
+app.get('/portal', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'portal.html'));
+});
+app.get('/portal/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'portal-dashboard.html'));
 });
 
 // ── Start ─────────────────────────────────────────────────────

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const supabase = require('../db');
 const { nanoid } = require('nanoid');
+const { createClientCredentials } = require('./auth');
 
 // ── Clients ──────────────────────────────────────────────────
 
@@ -301,14 +302,55 @@ router.get('/orders', async (req, res) => {
 // PATCH /api/orders/:id  { status: 'approved'|'rejected' }
 router.patch('/orders/:id', async (req, res) => {
   const { status } = req.body;
-  const { data, error } = await supabase
+  const { data: order, error } = await supabase
     .from('orders')
     .update({ status })
     .eq('id', req.params.id)
     .select()
     .single();
   if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+
+  // On approval: find or create client account, then generate login credentials
+  if (status === 'approved') {
+    try {
+      // Try to find a matching client by name
+      const { data: clients } = await supabase
+        .from('clients')
+        .select('id, name')
+        .ilike('name', `%${order.customer_name}%`)
+        .limit(1);
+
+      let clientId = clients?.[0]?.id;
+      let clientName = clients?.[0]?.name || order.customer_name;
+
+      // If no matching client exists, create one
+      if (!clientId) {
+        const { data: newClient } = await supabase
+          .from('clients')
+          .insert({ name: order.customer_name, contact: order.customer_contact })
+          .select()
+          .single();
+        clientId  = newClient?.id;
+        clientName = newClient?.name || order.customer_name;
+      }
+
+      if (clientId) {
+        const creds = await createClientCredentials(clientId, clientName);
+
+        // Notify admin via Telegram with credentials
+        try {
+          const bot = require('../bot');
+          if (bot.sendOrderApproved) bot.sendOrderApproved(order, creds);
+        } catch (_) {}
+
+        return res.json({ ...order, credentials: creds });
+      }
+    } catch (e) {
+      console.error('Credential creation error:', e.message);
+    }
+  }
+
+  res.json(order);
 });
 
 // ── Expenses ──────────────────────────────────────────────────

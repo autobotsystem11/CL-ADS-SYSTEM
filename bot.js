@@ -95,7 +95,24 @@ async function sendReport(dateStr) {
   const text = await buildReportText(dateStr);
   await bot.sendMessage(CHAT_ID, text, { parse_mode: 'Markdown' });
 }
-module.exports = { sendReport, sendOrderAlert, sendClientReports };
+// ── Order approved — send credentials to admin ────────────────
+async function sendOrderApproved(order, creds) {
+  if (!CHAT_ID) return;
+  const portalUrl = `${process.env.BASE_URL}/portal`;
+  const text =
+    `✅ *订单已批准！*\n\n` +
+    `👤 客户：${order.customer_name}\n` +
+    `📦 套餐：${order.package_name}\n` +
+    `💰 金额：RM ${Number(order.final_price).toLocaleString()}\n\n` +
+    (creds.alreadyExisted
+      ? `🔑 此客户已有账号：\`${creds.username}\`\n`
+      : `🔑 *新账号已创建：*\n账号：\`${creds.username}\`\n密码：\`${creds.password}\`\n\n`) +
+    `🌐 Portal：${portalUrl}\n\n` +
+    `请通过 WhatsApp 将账号密码发送给客户 👆`;
+  await bot.sendMessage(CHAT_ID, text, { parse_mode: 'Markdown' });
+}
+
+module.exports = { sendReport, sendOrderAlert, sendClientReports, sendOrderApproved };
 
 // ── New order alert ───────────────────────────────────────────
 async function sendOrderAlert(order) {
