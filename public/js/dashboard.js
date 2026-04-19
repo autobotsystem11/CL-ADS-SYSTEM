@@ -55,12 +55,15 @@ async function loadDashboard() {
   if (campaigns.length === 0) {
     tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state">暂无推广项目数据</div></td></tr>`;
   } else {
-    tbody.innerHTML = campaigns.map(c => `
-      <tr>
+    tbody.innerHTML = campaigns.map(c => {
+      const pixelSnippet = `<script src="${location.origin}/pixel.js?ref=${c.tracking_code}"><\/script>`;
+      return `<tr>
         <td>${esc(c.clients?.name || '—')}</td>
         <td>${esc(c.name)}</td>
         <td><span class="badge ${platformBadge(c.platform)}">${esc(c.platform)}</span></td>
         <td><strong class="text-orange">${c.clicks.toLocaleString()}</strong></td>
+        <td><strong class="text-blue">${(c.visits||0).toLocaleString()}</strong></td>
+        <td><strong class="text-green">${(c.conversions||0).toLocaleString()}</strong></td>
         <td>${c.messages_sent.toLocaleString()}</td>
         <td>${c.new_subscribers.toLocaleString()}</td>
         <td>
@@ -70,10 +73,13 @@ async function loadDashboard() {
           </div>
         </td>
         <td>
+          <button class="btn btn-ghost btn-sm" onclick="copyText(${JSON.stringify(pixelSnippet)})">复制像素</button>
+        </td>
+        <td>
           <a href="/report?id=${c.client_id}" target="_blank" class="btn btn-ghost btn-sm">查看</a>
         </td>
-      </tr>
-    `).join('');
+      </tr>`;
+    }).join('');
   }
 
   // Click chart (aggregate all campaigns by day)
@@ -224,7 +230,7 @@ function setupForms() {
     e.preventDefault();
     const res = await apiFetch('/api/clients', {
       method: 'POST',
-      body: JSON.stringify({ name: val('c-name'), contact: val('c-contact') }),
+      body: JSON.stringify({ name: val('c-name'), contact: val('c-contact'), telegram_chat_id: val('c-telegram') || null }),
     });
     if (res) {
       toast('客户已添加 ✅', 'success');

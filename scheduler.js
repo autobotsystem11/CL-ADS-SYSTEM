@@ -5,9 +5,10 @@ const cron = require('node-cron');
 cron.schedule('0 0 * * *', async () => {
   console.log('⏰ Daily report scheduler fired:', new Date().toISOString());
   try {
-    const { sendReport } = require('./bot');
-    await sendReport(); // sends yesterday's data
-    console.log('✅ Daily report sent via Telegram.');
+    const { sendReport, sendClientReports } = require('./bot');
+    await sendReport();         // admin report
+    await sendClientReports();  // per-client Telegram reports
+    console.log('✅ Daily reports sent via Telegram.');
   } catch (e) {
     console.error('❌ Scheduler error:', e.message);
   }

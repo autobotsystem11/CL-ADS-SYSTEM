@@ -24,8 +24,9 @@ router.get('/:code', async (req, res) => {
     referer:    req.headers['referer'] || null,
   }).then(() => {}).catch(() => {});
 
-  // Redirect immediately
-  res.redirect(302, campaign.target_url);
+  // Redirect immediately (append cl_ref so pixel.js can auto-read it)
+  const sep = campaign.target_url.includes('?') ? '&' : '?';
+  res.redirect(302, campaign.target_url + sep + 'cl_ref=' + code);
 });
 
 module.exports = router;

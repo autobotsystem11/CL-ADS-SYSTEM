@@ -95,7 +95,7 @@ async function sendReport(dateStr) {
   const text = await buildReportText(dateStr);
   await bot.sendMessage(CHAT_ID, text, { parse_mode: 'Markdown' });
 }
-module.exports = { sendReport, sendOrderAlert };
+module.exports = { sendReport, sendOrderAlert, sendClientReports };
 
 // ── New order alert ───────────────────────────────────────────
 async function sendOrderAlert(order) {
@@ -114,12 +114,74 @@ async function sendOrderAlert(order) {
   await bot.sendMessage(CHAT_ID, text, { parse_mode: 'Markdown' });
 }
 
+// ── Client daily reports ──────────────────────────────────────
+async function sendClientReports(dateStr) {
+  const reportDate = dateStr || (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().slice(0, 10);
+  })();
+
+  const dayStart = `${reportDate}T00:00:00.000Z`;
+  const dayEnd   = `${reportDate}T23:59:59.999Z`;
+
+  const { data: clients } = await supabase
+    .from('clients')
+    .select('id, name, telegram_chat_id')
+    .not('telegram_chat_id', 'is', null);
+
+  if (!clients || clients.length === 0) return;
+
+  for (const client of clients) {
+    try {
+      const { data: campaigns } = await supabase
+        .from('campaigns')
+        .select('id, name, tracking_code')
+        .eq('client_id', client.id);
+
+      if (!campaigns || campaigns.length === 0) continue;
+      const ids = campaigns.map(c => c.id);
+
+      const [{ data: clicks }, { data: pixels }, { data: metrics }] = await Promise.all([
+        supabase.from('click_events').select('campaign_id').in('campaign_id', ids).gte('clicked_at', dayStart).lte('clicked_at', dayEnd),
+        supabase.from('pixel_events').select('campaign_id, event_type').in('campaign_id', ids).gte('created_at', dayStart).lte('created_at', dayEnd),
+        supabase.from('daily_metrics').select('*').in('campaign_id', ids).eq('date', reportDate),
+      ]);
+
+      const totalClicks  = (clicks || []).length;
+      const totalVisits  = (pixels || []).filter(p => p.event_type === 'visit').length;
+      const totalLeads   = (pixels || []).filter(p => p.event_type === 'lead').length;
+      const totalConv    = (pixels || []).filter(p => p.event_type === 'conversion').length;
+      const totalSent    = (metrics || []).reduce((s, m) => s + m.messages_sent, 0);
+      const totalSubs    = (metrics || []).reduce((s, m) => s + m.new_subscribers, 0);
+      const convRate     = totalClicks > 0 ? ((totalConv / totalClicks) * 100).toFixed(1) : '—';
+
+      const text =
+        `📊 *你的广告日报 — ${reportDate}*\n\n` +
+        `📤 消息发送：${totalSent.toLocaleString()} 条\n` +
+        `👆 链接点击：${totalClicks.toLocaleString()} 次\n` +
+        `🌐 访问网站：${totalVisits.toLocaleString()} 次\n` +
+        (totalLeads  > 0 ? `📋 表单询问：${totalLeads.toLocaleString()} 次\n` : '') +
+        `💰 成功转化：${totalConv.toLocaleString()} 次\n` +
+        `👥 新增订阅：${totalSubs.toLocaleString()} 人\n` +
+        `📈 点击转化率：${convRate}%\n\n` +
+        `_由 CL SDN BHD 提供追踪服务 🚀_`;
+
+      await bot.sendMessage(client.telegram_chat_id, text, { parse_mode: 'Markdown' });
+    } catch (e) {
+      console.error(`Failed to send report to client ${client.name}:`, e.message);
+    }
+  }
+}
+
 // ── Bot commands ──────────────────────────────────────────────
 
-// /start — show help
+// /start — show help + chat ID (so clients can share their ID with admin)
 bot.onText(/\/start/, (msg) => {
   bot.sendMessage(msg.chat.id,
     `👋 *CL SDN BHD 广告日报 Bot*\n\n` +
+    `📌 你的 Chat ID：\`${msg.chat.id}\`\n` +
+    `请将此 ID 发给 CL SDN BHD 以接收每日广告报告\n\n` +
     `可用指令：\n` +
     `📊 /report — 昨日所有项目数据\n` +
     `📅 /report YYYY-MM-DD — 指定日期报告\n` +

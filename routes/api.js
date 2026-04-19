@@ -15,13 +15,13 @@ router.get('/clients', async (req, res) => {
   res.json(data);
 });
 
-// POST /api/clients  { name, contact }
+// POST /api/clients  { name, contact, telegram_chat_id }
 router.post('/clients', async (req, res) => {
-  const { name, contact } = req.body;
+  const { name, contact, telegram_chat_id } = req.body;
   if (!name) return res.status(400).json({ error: 'name is required' });
   const { data, error } = await supabase
     .from('clients')
-    .insert({ name, contact })
+    .insert({ name, contact, telegram_chat_id: telegram_chat_id || null })
     .select()
     .single();
   if (error) return res.status(500).json({ error: error.message });
@@ -100,6 +100,34 @@ router.post('/metrics', async (req, res) => {
 
 // ── Dashboard aggregates ──────────────────────────────────────
 
+// ── Pixel tracking ────────────────────────────────────────────
+const PIXEL_GIF = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+function sendGif(res) {
+  res.writeHead(200, { 'Content-Type': 'image/gif', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' });
+  res.end(PIXEL_GIF);
+}
+
+// GET /api/pixel?ref=TRACKING_CODE&event=visit|lead|conversion
+router.get('/pixel', async (req, res) => {
+  const { ref, event } = req.query;
+  if (ref && event) {
+    const { data: campaign } = await supabase
+      .from('campaigns').select('id').eq('tracking_code', ref).single();
+    if (campaign) {
+      supabase.from('pixel_events').insert({
+        campaign_id: campaign.id,
+        event_type:  event,
+        ip:          req.headers['x-forwarded-for'] || req.ip || null,
+        user_agent:  req.headers['user-agent'] || null,
+        referer:     req.headers['referer'] || null,
+      }).then(() => {}).catch(() => {});
+    }
+  }
+  sendGif(res);
+});
+
+// ── Dashboard aggregates ──────────────────────────────────────
+
 // GET /api/dashboard — summary for all clients + campaigns (last 7 days)
 router.get('/dashboard', async (req, res) => {
   const days = parseInt(req.query.days) || 7;
@@ -107,12 +135,13 @@ router.get('/dashboard', async (req, res) => {
   since.setDate(since.getDate() - days);
   const sinceISO = since.toISOString();
 
-  const [{ data: clients }, { data: campaigns }, { data: clicks }, { data: metrics }] =
+  const [{ data: clients }, { data: campaigns }, { data: clicks }, { data: metrics }, { data: pixels }] =
     await Promise.all([
       supabase.from('clients').select('*'),
       supabase.from('campaigns').select('*, clients(name)'),
       supabase.from('click_events').select('campaign_id, clicked_at').gte('clicked_at', sinceISO),
       supabase.from('daily_metrics').select('*').gte('date', since.toISOString().slice(0, 10)),
+      supabase.from('pixel_events').select('campaign_id, event_type').gte('created_at', sinceISO),
     ]);
 
   // Aggregate clicks per campaign
@@ -131,6 +160,13 @@ router.get('/dashboard', async (req, res) => {
     metricsByCampaign[m.campaign_id].new_subscribers += m.new_subscribers;
   });
 
+  // Aggregate pixel events per campaign
+  const pixelByCampaign = {};
+  (pixels || []).forEach(p => {
+    if (!pixelByCampaign[p.campaign_id]) pixelByCampaign[p.campaign_id] = { visit: 0, lead: 0, conversion: 0 };
+    pixelByCampaign[p.campaign_id][p.event_type] = (pixelByCampaign[p.campaign_id][p.event_type] || 0) + 1;
+  });
+
   // Build enriched campaign list
   const enriched = (campaigns || []).map(c => ({
     ...c,
@@ -138,6 +174,9 @@ router.get('/dashboard', async (req, res) => {
     messages_sent:   metricsByCampaign[c.id]?.messages_sent   || 0,
     new_subscribers: metricsByCampaign[c.id]?.new_subscribers || 0,
     tracking_url:    `${process.env.BASE_URL}/go/${c.tracking_code}`,
+    visits:          pixelByCampaign[c.id]?.visit      || 0,
+    leads:           pixelByCampaign[c.id]?.lead       || 0,
+    conversions:     pixelByCampaign[c.id]?.conversion || 0,
   }));
 
   res.json({ clients: clients || [], campaigns: enriched });
@@ -174,6 +213,14 @@ router.get('/client-report/:clientId', async (req, res) => {
         .gte('date', since.toISOString().slice(0, 10))
     : { data: [] };
 
+  const { data: pixelEvents } = campaignIds.length
+    ? await supabase
+        .from('pixel_events')
+        .select('event_type, created_at')
+        .in('campaign_id', campaignIds)
+        .gte('created_at', since.toISOString())
+    : { data: [] };
+
   // Build daily click time series (last 30 days)
   const clicksByDay = {};
   (clicks || []).forEach(c => {
@@ -181,11 +228,18 @@ router.get('/client-report/:clientId', async (req, res) => {
     clicksByDay[day] = (clicksByDay[day] || 0) + 1;
   });
 
+  // Pixel event totals
+  const pixelTotals = { visit: 0, lead: 0, conversion: 0 };
+  (pixelEvents || []).forEach(p => { pixelTotals[p.event_type] = (pixelTotals[p.event_type] || 0) + 1; });
+
   // Total aggregates
   const totals = {
     clicks:          (clicks  || []).length,
     messages_sent:   (metrics || []).reduce((s, m) => s + m.messages_sent,   0),
     new_subscribers: (metrics || []).reduce((s, m) => s + m.new_subscribers, 0),
+    visits:          pixelTotals.visit,
+    leads:           pixelTotals.lead,
+    conversions:     pixelTotals.conversion,
   };
 
   res.json({ client, campaigns: campaigns || [], clicksByDay, totals });
