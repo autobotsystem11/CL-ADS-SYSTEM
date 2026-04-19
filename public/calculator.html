@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>免费广告效果预测器 — CL SDN BHD</title>
+  <meta name="description" content="马来西亚免费广告效果预测工具。输入你的行业和预算，立即获得专业预估报告 + 个性化广告文案。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0a0a14;
+      --bg2:     #13131f;
+      --bg3:     #1c1c2e;
+      --border:  rgba(255,255,255,0.08);
+      --text:    #f1f5f9;
+      --muted:   #64748b;
+      --orange:  #f97316;
+      --orange2: #ea580c;
+      --blue:    #3b82f6;
+      --green:   #22c55e;
+      --purple:  #a855f7;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Nav ── */
+    .nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 32px;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(10,10,20,0.9);
+      backdrop-filter: blur(12px);
+    }
+    .nav-brand { display: flex; align-items: center; gap: 10px; }
+    .nav-logo {
+      width: 36px; height: 36px; border-radius: 9px;
+      background: var(--orange); display: flex; align-items: center;
+      justify-content: center; font-weight: 900; font-size: 13px; color: #fff;
+    }
+    .nav-name { font-weight: 700; font-size: 15px; }
+    .nav-badge {
+      font-size: 11px; padding: 3px 10px; border-radius: 20px;
+      background: rgba(249,115,22,0.15); color: var(--orange);
+      border: 1px solid rgba(249,115,22,0.3); font-weight: 600;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      text-align: center;
+      padding: 60px 20px 48px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; top: -80px; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(249,115,22,0.1); border: 1px solid rgba(249,115,22,0.25);
+      color: var(--orange); font-size: 12px; font-weight: 600;
+      padding: 5px 14px; border-radius: 20px; margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-size: clamp(26px, 5vw, 44px);
+      font-weight: 800; line-height: 1.2;
+      margin-bottom: 14px;
+      background: linear-gradient(135deg, #fff 60%, #f97316);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      color: var(--muted); font-size: 16px; max-width: 520px;
+      margin: 0 auto 32px; line-height: 1.6;
+    }
+    .hero-stats {
+      display: flex; justify-content: center; gap: 32px; flex-wrap: wrap;
+    }
+    .hero-stat { text-align: center; }
+    .hero-stat .val { font-size: 22px; font-weight: 800; color: var(--orange); }
+    .hero-stat .lbl { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Wizard Container ── */
+    .wizard-wrap {
+      max-width: 700px; margin: 0 auto; padding: 0 20px 80px;
+    }
+
+    /* ── Progress ── */
+    .progress-bar {
+      display: flex; gap: 6px; margin-bottom: 36px; align-items: center;
+    }
+    .step-dot {
+      flex: 1; height: 4px; border-radius: 2px;
+      background: var(--bg3); transition: background 0.3s;
+    }
+    .step-dot.active { background: var(--orange); }
+    .step-dot.done   { background: rgba(249,115,22,0.4); }
+    .progress-label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+
+    /* ── Step Cards ── */
+    .step {
+      display: none;
+      animation: slideIn 0.35s cubic-bezier(.4,0,.2,1);
+    }
+    .step.active { display: block; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(24px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .step-title {
+      font-size: 22px; font-weight: 800; margin-bottom: 6px;
+    }
+    .step-sub {
+      font-size: 14px; color: var(--muted); margin-bottom: 28px;
+    }
+
+    /* Industry Grid */
+    .industry-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+      margin-bottom: 32px;
+    }
+    @media (max-width: 480px) { .industry-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .industry-card {
+      background: var(--bg2); border: 2px solid var(--border);
+      border-radius: 16px; padding: 20px 12px; text-align: center;
+      cursor: pointer; transition: all 0.2s; user-select: none;
+    }
+    .industry-card:hover { border-color: rgba(249,115,22,0.4); transform: translateY(-2px); }
+    .industry-card.selected {
+      border-color: var(--orange);
+      background: rgba(249,115,22,0.08);
+      box-shadow: 0 0 0 1px var(--orange), 0 0 20px rgba(249,115,22,0.15);
+    }
+    .industry-icon { font-size: 32px; margin-bottom: 8px; }
+    .industry-name { font-size: 14px; font-weight: 600; }
+
+    /* Budget Slider */
+    .budget-display {
+      text-align: center; margin-bottom: 24px;
+    }
+    .budget-amount {
+      font-size: 48px; font-weight: 800; color: var(--orange);
+    }
+    .budget-period { font-size: 14px; color: var(--muted); }
+
+    input[type=range] {
+      -webkit-appearance: none; width: 100%; height: 6px;
+      background: var(--bg3); border-radius: 3px; outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 22px; height: 22px;
+      border-radius: 50%; background: var(--orange); cursor: pointer;
+      box-shadow: 0 0 0 4px rgba(249,115,22,0.2);
+    }
+    .budget-labels {
+      display: flex; justify-content: space-between;
+      font-size: 11px; color: var(--muted); margin-top: 10px;
+    }
+
+    /* Region / Platform Buttons */
+    .option-group { margin-bottom: 24px; }
+    .option-group-label {
+      font-size: 13px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px;
+    }
+    .option-buttons {
+      display: flex; flex-wrap: wrap; gap: 10px;
+    }
+    .opt-btn {
+      padding: 9px 18px; border-radius: 10px; border: 1.5px solid var(--border);
+      background: var(--bg2); color: var(--text); font-size: 14px; font-weight: 500;
+      cursor: pointer; transition: all 0.2s; user-select: none;
+    }
+    .opt-btn:hover { border-color: rgba(249,115,22,0.4); }
+    .opt-btn.selected {
+      border-color: var(--orange); background: rgba(249,115,22,0.08);
+      color: var(--orange); font-weight: 600;
+    }
+
+    /* Product input */
+    .form-group { margin-bottom: 20px; }
+    .form-group label {
+      display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--muted);
+    }
+    .form-group textarea, .form-group input[type=text] {
+      width: 100%; padding: 12px 16px;
+      background: var(--bg2); border: 1.5px solid var(--border);
+      border-radius: 12px; color: var(--text); font-size: 14px;
+      font-family: inherit; resize: vertical; outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-group textarea:focus, .form-group input[type=text]:focus {
+      border-color: var(--orange);
+    }
+    .form-group textarea { min-height: 90px; }
+    .char-hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+    /* Navigation Buttons */
+    .step-nav {
+      display: flex; gap: 12px; margin-top: 8px;
+    }
+    .btn {
+      padding: 13px 28px; border-radius: 12px; font-size: 15px;
+      font-weight: 700; cursor: pointer; border: none; transition: all 0.2s;
+      font-family: inherit;
+    }
+    .btn-primary {
+      background: var(--orange); color: white; flex: 1;
+    }
+    .btn-primary:hover { background: var(--orange2); transform: translateY(-1px); }
+    .btn-ghost {
+      background: var(--bg2); color: var(--text);
+      border: 1.5px solid var(--border);
+    }
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.2); }
+
+    /* ── Loading Screen ── */
+    #loading-screen {
+      display: none; text-align: center; padding: 60px 20px;
+    }
+    .loading-title {
+      font-size: 22px; font-weight: 800; margin-bottom: 8px;
+    }
+    .loading-sub { color: var(--muted); font-size: 14px; margin-bottom: 40px; }
+
+    .scan-bars {
+      display: flex; flex-direction: column; gap: 10px;
+      max-width: 400px; margin: 0 auto 32px;
+    }
+    .scan-bar {
+      height: 8px; border-radius: 4px; background: var(--bg3);
+      overflow: hidden; position: relative;
+    }
+    .scan-bar::after {
+      content: '';
+      position: absolute; top: 0; left: -100%; height: 100%;
+      background: linear-gradient(90deg, transparent, var(--orange), transparent);
+      animation: scan 1.4s ease-in-out infinite;
+    }
+    .scan-bar:nth-child(2)::after { animation-delay: 0.2s; }
+    .scan-bar:nth-child(3)::after { animation-delay: 0.4s; }
+    .scan-bar:nth-child(4)::after { animation-delay: 0.6s; }
+    .scan-bar:nth-child(5)::after { animation-delay: 0.8s; }
+    @keyframes scan {
+      0%   { left: -100%; width: 60%; }
+      100% { left: 140%; width: 60%; }
+    }
+
+    .loading-steps { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; max-width: 320px; margin: 0 auto; }
+    .loading-step { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+    .loading-step .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--orange); animation: pulse 1s infinite; }
+    .loading-step:nth-child(2) .dot { animation-delay: 0.3s; }
+    .loading-step:nth-child(3) .dot { animation-delay: 0.6s; }
+    @keyframes pulse { 0%,100% { opacity:0.3; } 50% { opacity:1; } }
+
+    /* ── Results ── */
+    #results-screen { display: none; }
+
+    .results-header {
+      text-align: center; margin-bottom: 32px;
+      padding: 32px 20px;
+      background: linear-gradient(135deg, rgba(249,115,22,0.08), rgba(168,85,247,0.05));
+      border: 1px solid rgba(249,115,22,0.15);
+      border-radius: 20px;
+    }
+    .results-header .tag {
+      display: inline-block; background: rgba(34,197,94,0.15);
+      color: var(--green); font-size: 12px; font-weight: 600;
+      padding: 4px 12px; border-radius: 20px; margin-bottom: 12px;
+    }
+    .results-header h2 { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+    .results-header p { color: var(--muted); font-size: 13px; }
+
+    .results-section { margin-bottom: 28px; }
+    .results-section-title {
+      font-size: 13px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px;
+    }
+
+    /* Stats Grid */
+    .stats-grid-4 {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+    }
+    @media (min-width: 500px) { .stats-grid-4 { grid-template-columns: repeat(4, 1fr); } }
+
+    .stat-box {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px; text-align: center;
+    }
+    .stat-box .val { font-size: 26px; font-weight: 800; }
+    .stat-box .lbl { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .c-orange { color: var(--orange); }
+    .c-blue   { color: var(--blue); }
+    .c-green  { color: var(--green); }
+    .c-purple { color: var(--purple); }
+
+    /* Copy Templates */
+    .copy-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 14px; padding: 18px; margin-bottom: 12px; position: relative;
+    }
+    .copy-card-tag {
+      display: inline-block; font-size: 11px; font-weight: 700;
+      padding: 3px 10px; border-radius: 6px; margin-bottom: 10px;
+    }
+    .tag-hot   { background: rgba(249,115,22,0.15); color: var(--orange); }
+    .tag-promo { background: rgba(168,85,247,0.15); color: var(--purple); }
+    .tag-story { background: rgba(59,130,246,0.15); color: var(--blue); }
+    .copy-text {
+      font-size: 14px; line-height: 1.7; color: var(--text);
+      white-space: pre-wrap;
+    }
+    .copy-btn {
+      position: absolute; top: 14px; right: 14px;
+      padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: 600;
+      background: var(--bg3); border: 1px solid var(--border); color: var(--muted);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .copy-btn:hover { border-color: var(--orange); color: var(--orange); }
+    .copy-btn.copied { color: var(--green); border-color: var(--green); }
+
+    /* Strategy */
+    .strategy-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+    }
+    @media (max-width: 480px) { .strategy-grid { grid-template-columns: 1fr; } }
+    .strategy-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px 16px;
+    }
+    .strategy-card .icon { font-size: 20px; margin-bottom: 6px; }
+    .strategy-card .s-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+    .strategy-card .s-val { font-size: 13px; font-weight: 600; }
+
+    /* CTA */
+    .cta-box {
+      background: linear-gradient(135deg, rgba(249,115,22,0.1), rgba(249,115,22,0.04));
+      border: 1px solid rgba(249,115,22,0.25);
+      border-radius: 20px; padding: 36px 28px; text-align: center;
+    }
+    .cta-box h3 { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+    .cta-box p  { color: var(--muted); font-size: 14px; margin-bottom: 24px; line-height: 1.6; }
+    .cta-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .cta-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 13px 24px; border-radius: 12px; font-size: 15px;
+      font-weight: 700; text-decoration: none; transition: all 0.2s;
+    }
+    .cta-wa { background: #25D366; color: white; }
+    .cta-wa:hover { background: #1ebe5d; transform: translateY(-2px); }
+    .cta-tg { background: #229ED9; color: white; }
+    .cta-tg:hover { background: #1a8bc2; transform: translateY(-2px); }
+
+    .restart-link {
+      display: block; text-align: center; margin-top: 24px;
+      font-size: 13px; color: var(--muted); cursor: pointer;
+      text-decoration: underline; transition: color 0.2s;
+    }
+    .restart-link:hover { color: var(--text); }
+
+    /* Footer */
+    .footer {
+      text-align: center; padding: 24px; color: var(--muted); font-size: 12px;
+      border-top: 1px solid var(--border); margin-top: 40px;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--bg2); border: 1px solid var(--border);
+      color: var(--green); padding: 10px 18px; border-radius: 10px;
+      font-size: 13px; font-weight: 600; transform: translateY(80px);
+      transition: transform 0.3s; z-index: 999;
+    }
+    #toast.show { transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+  <div class="nav-brand">
+    <div class="nav-logo">CL</div>
+    <span class="nav-name">CL SDN BHD</span>
+  </div>
+  <div class="nav-badge">✨ 免费工具</div>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-tag">🎯 马来西亚商家专属</div>
+  <h1>免费广告效果<br>预测分析工具</h1>
+  <p>只需 60 秒，立即获得专业广告效果预估报告 + 3 款个性化推广文案，完全免费！</p>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="val">500+</div>
+      <div class="lbl">商家已使用</div>
+    </div>
+    <div class="hero-stat">
+      <div class="val">98%</div>
+      <div class="lbl">满意度</div>
+    </div>
+    <div class="hero-stat">
+      <div class="val">60秒</div>
+      <div class="lbl">快速出报告</div>
+    </div>
+  </div>
+</div>
+
+<!-- Wizard -->
+<div class="wizard-wrap">
+
+  <!-- Progress -->
+  <div class="progress-bar" id="progress-bar">
+    <div class="step-dot" id="dot-1"></div>
+    <div class="step-dot" id="dot-2"></div>
+    <div class="step-dot" id="dot-3"></div>
+    <div class="step-dot" id="dot-4"></div>
+    <span class="progress-label" id="progress-label">第 1 步，共 4 步</span>
+  </div>
+
+  <!-- Step 1: Industry -->
+  <div class="step active" id="step-1">
+    <div class="step-title">你是做哪个行业的？</div>
+    <div class="step-sub">选择最接近的行业类别，帮我们给你更准确的预估</div>
+    <div class="industry-grid" id="industry-grid">
+      <div class="industry-card" data-val="food"      onclick="selectIndustry(this)">
+        <div class="industry-icon">🍜</div>
+        <div class="industry-name">餐饮</div>
+      </div>
+      <div class="industry-card" data-val="retail"    onclick="selectIndustry(this)">
+        <div class="industry-icon">🛍️</div>
+        <div class="industry-name">零售</div>
+      </div>
+      <div class="industry-card" data-val="beauty"    onclick="selectIndustry(this)">
+        <div class="industry-icon">💄</div>
+        <div class="industry-name">美容</div>
+      </div>
+      <div class="industry-card" data-val="education" onclick="selectIndustry(this)">
+        <div class="industry-icon">📚</div>
+        <div class="industry-name">教育</div>
+      </div>
+      <div class="industry-card" data-val="property"  onclick="selectIndustry(this)">
+        <div class="industry-icon">🏠</div>
+        <div class="industry-name">房产</div>
+      </div>
+      <div class="industry-card" data-val="other"     onclick="selectIndustry(this)">
+        <div class="industry-icon">📦</div>
+        <div class="industry-name">其他</div>
+      </div>
+    </div>
+    <div class="step-nav">
+      <button class="btn btn-primary" onclick="goStep(2)" id="btn-step1">下一步 →</button>
+    </div>
+  </div>
+
+  <!-- Step 2: Budget -->
+  <div class="step" id="step-2">
+    <div class="step-title">每月广告预算是多少？</div>
+    <div class="step-sub">不确定？先按目前能接受的范围估算</div>
+    <div class="budget-display">
+      <div class="budget-amount" id="budget-display">RM 1,000</div>
+      <div class="budget-period">每月广告预算</div>
+    </div>
+    <input type="range" id="budget-slider" min="0" max="9" value="2"
+           oninput="updateBudget(this.value)">
+    <div class="budget-labels">
+      <span>RM 300</span>
+      <span>RM 500</span>
+      <span>RM 1,000</span>
+      <span>RM 2,000</span>
+      <span>RM 3,000</span>
+      <span>RM 5,000+</span>
+    </div>
+    <div class="step-nav" style="margin-top:32px">
+      <button class="btn btn-ghost" onclick="goStep(1)">← 上一步</button>
+      <button class="btn btn-primary" onclick="goStep(3)">下一步 →</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Region + Platform -->
+  <div class="step" id="step-3">
+    <div class="step-title">推广范围 + 使用平台</div>
+    <div class="step-sub">多选平台可以获得组合推广建议</div>
+
+    <div class="option-group">
+      <div class="option-group-label">📍 推广地区</div>
+      <div class="option-buttons" id="region-group">
+        <button class="opt-btn selected" data-val="local"    onclick="selectOpt(this, 'region')">本地商圈</button>
+        <button class="opt-btn"          data-val="city"     onclick="selectOpt(this, 'region')">特定城市</button>
+        <button class="opt-btn"          data-val="national" onclick="selectOpt(this, 'region')">全马来西亚</button>
+      </div>
+    </div>
+
+    <div class="option-group">
+      <div class="option-group-label">📱 推广平台</div>
+      <div class="option-buttons" id="platform-group">
+        <button class="opt-btn selected" data-val="telegram"  onclick="selectOpt(this, 'platform')">🤖 Telegram</button>
+        <button class="opt-btn"          data-val="facebook"  onclick="selectOpt(this, 'platform')">📘 Facebook</button>
+        <button class="opt-btn"          data-val="instagram" onclick="selectOpt(this, 'platform')">📸 Instagram</button>
+        <button class="opt-btn"          data-val="combo"     onclick="selectOpt(this, 'platform')">⚡ 组合推广</button>
+      </div>
+    </div>
+
+    <div class="step-nav">
+      <button class="btn btn-ghost" onclick="goStep(2)">← 上一步</button>
+      <button class="btn btn-primary" onclick="goStep(4)">下一步 →</button>
+    </div>
+  </div>
+
+  <!-- Step 4: Product Description -->
+  <div class="step" id="step-4">
+    <div class="step-title">简单介绍你的产品或服务</div>
+    <div class="step-sub">不填也没关系，填了会帮你生成更个性化的广告文案 ✨</div>
+
+    <div class="form-group">
+      <label>产品 / 服务名称</label>
+      <input type="text" id="product-name" placeholder="例：陈记肉骨茶 / 美甲沙龙 / 英语补习班">
+    </div>
+    <div class="form-group">
+      <label>简短描述（可选）</label>
+      <textarea id="product-desc" placeholder="例：我们是KL一家做了15年的正宗肉骨茶，以新鲜食材和传统配方见长，主要服务附近上班族和家庭客户..."></textarea>
+      <div class="char-hint">描述越具体，文案越精准</div>
+    </div>
+
+    <div class="step-nav">
+      <button class="btn btn-ghost" onclick="goStep(3)">← 上一步</button>
+      <button class="btn btn-primary" onclick="generateReport()">🚀 立即生成报告</button>
+    </div>
+  </div>
+
+  <!-- Loading Screen -->
+  <div id="loading-screen">
+    <div class="loading-title">🔍 正在分析你的广告潜力...</div>
+    <div class="loading-sub">根据马来西亚市场数据进行专业预估</div>
+    <div class="scan-bars">
+      <div class="scan-bar" style="width:80%"></div>
+      <div class="scan-bar" style="width:100%"></div>
+      <div class="scan-bar" style="width:65%"></div>
+      <div class="scan-bar" style="width:90%"></div>
+      <div class="scan-bar" style="width:75%"></div>
+    </div>
+    <div class="loading-steps">
+      <div class="loading-step"><span class="dot"></span> 分析行业竞争数据...</div>
+      <div class="loading-step"><span class="dot"></span> 计算预算投放效率...</div>
+      <div class="loading-step"><span class="dot"></span> 生成个性化文案...</div>
+    </div>
+  </div>
+
+  <!-- Results Screen -->
+  <div id="results-screen">
+
+    <div class="results-header">
+      <div class="tag">✅ 分析完成</div>
+      <h2 id="r-title">你的广告潜力报告</h2>
+      <p id="r-subtitle">基于行业数据 + 马来西亚市场预估</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="results-section">
+      <div class="results-section-title">📊 预估效果（每月）</div>
+      <div class="stats-grid-4">
+        <div class="stat-box">
+          <div class="val c-orange" id="r-reach">—</div>
+          <div class="lbl">预计触及人数</div>
+        </div>
+        <div class="stat-box">
+          <div class="val c-blue" id="r-clicks">—</div>
+          <div class="lbl">预计点击次数</div>
+        </div>
+        <div class="stat-box">
+          <div class="val c-green" id="r-customers">—</div>
+          <div class="lbl">预计新增客户</div>
+        </div>
+        <div class="stat-box">
+          <div class="val c-purple" id="r-roi">—</div>
+          <div class="lbl">投资回报率</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Copy Templates -->
+    <div class="results-section">
+      <div class="results-section-title">📝 推荐广告文案（3款）</div>
+
+      <div class="copy-card">
+        <div class="copy-card-tag tag-hot">🔥 热门款 — 适合日常推广</div>
+        <button class="copy-btn" onclick="copyText(this, 'copy-hot')">复制</button>
+        <div class="copy-text" id="copy-hot"></div>
+      </div>
+
+      <div class="copy-card">
+        <div class="copy-card-tag tag-promo">⚡ 促销款 — 适合打折活动</div>
+        <button class="copy-btn" onclick="copyText(this, 'copy-promo')">复制</button>
+        <div class="copy-text" id="copy-promo"></div>
+      </div>
+
+      <div class="copy-card">
+        <div class="copy-card-tag tag-story">💬 故事款 — 适合品牌建立</div>
+        <button class="copy-btn" onclick="copyText(this, 'copy-story')">复制</button>
+        <div class="copy-text" id="copy-story"></div>
+      </div>
+    </div>
+
+    <!-- Strategy -->
+    <div class="results-section">
+      <div class="results-section-title">🎯 推广策略建议</div>
+      <div class="strategy-grid">
+        <div class="strategy-card">
+          <div class="icon">⏰</div>
+          <div class="s-label">最佳发送时间</div>
+          <div class="s-val" id="r-time">—</div>
+        </div>
+        <div class="strategy-card">
+          <div class="icon">📅</div>
+          <div class="s-label">建议发送频率</div>
+          <div class="s-val" id="r-freq">—</div>
+        </div>
+        <div class="strategy-card">
+          <div class="icon">📱</div>
+          <div class="s-label">推荐平台组合</div>
+          <div class="s-val" id="r-platform">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="cta-box">
+      <h3>🚀 想让预估变成真实数据？</h3>
+      <p>我们帮助超过 200 家马来西亚商家成功推广。<br>
+         现在联系我们，获取 <strong style="color:var(--orange)">免费一对一咨询</strong>，帮你制定最适合的推广方案！</p>
+      <div class="cta-buttons">
+        <a href="https://wa.me/60YOUR_WHATSAPP_NUMBER?text=你好！我刚刚使用了广告效果预测工具，想了解更多" class="cta-btn cta-wa" target="_blank">
+          📱 WhatsApp 咨询
+        </a>
+        <a href="https://t.me/YourTelegramUsername" class="cta-btn cta-tg" target="_blank">
+          ✈️ Telegram 联系
+        </a>
+      </div>
+    </div>
+
+    <div class="restart-link" onclick="restartWizard()">← 重新预测</div>
+  </div>
+
+</div><!-- /.wizard-wrap -->
+
+<div class="footer">
+  <p>© 2026 CL SDN BHD · 专业广告推广服务 · KL Malaysia</p>
+  <p style="margin-top:4px">此工具基于马来西亚市场数据预估，实际效果因产品、受众和执行质量而有所不同</p>
+</div>
+
+<div id="toast">✓ 已复制到剪贴板</div>
+
+<script>
+/* ── State ── */
+const state = {
+  industry: null,
+  budget: 1000,
+  region: 'local',
+  platform: 'telegram',
+  productName: '',
+  productDesc: '',
+};
+
+const BUDGETS = [300, 500, 800, 1000, 1500, 2000, 3000, 5000, 8000, 10000];
+
+const INDUSTRY_DATA = {
+  food:      { name: '餐饮',   reachMult: 1.8, ctr: 0.08,  conv: 0.12, aov: 35,  time: '晚上 6–9 点',      freq: '每周 4–5 次', platform: 'Telegram + Instagram' },
+  retail:    { name: '零售',   reachMult: 1.5, ctr: 0.06,  conv: 0.08, aov: 80,  time: '晚上 8–10 点',     freq: '每周 3–4 次', platform: 'Facebook + Instagram' },
+  beauty:    { name: '美容',   reachMult: 2.0, ctr: 0.10,  conv: 0.15, aov: 120, time: '早上 9–11 + 晚 8–10', freq: '每周 5–7 次', platform: 'Instagram + Telegram' },
+  education: { name: '教育',   reachMult: 1.2, ctr: 0.05,  conv: 0.06, aov: 300, time: '周末下午',           freq: '每周 3–5 次', platform: 'Facebook + Telegram' },
+  property:  { name: '房产',   reachMult: 0.8, ctr: 0.04,  conv: 0.03, aov: 2000,time: '周末早上',          freq: '每周 2–3 次', platform: 'Facebook + WhatsApp' },
+  other:     { name: '其他行业',reachMult: 1.0, ctr: 0.05,  conv: 0.07, aov: 100, time: '工作日上午',        freq: '每周 3–4 次', platform: 'Telegram + Facebook' },
+};
+
+const REGION_MULT = { local: 0.8, city: 1.0, national: 1.5 };
+const PLATFORM_MULT = { telegram: 1.0, facebook: 1.2, instagram: 1.3, combo: 1.6 };
+
+const COPY_TEMPLATES = {
+  food: {
+    hot:   (p) => `🍜 ${p}，KL街坊力推！\n\n每天新鲜现做，食材真材实料，价格亲民！\n无数回头客证明，好吃才是硬道理 😋\n\n📍 马来西亚本地，方便快捷\n📲 点击了解详情，立即预订 👇`,
+    promo: (p) => `🔥 限时特惠！${p} 买一送一！\n\n⏰ 活动限时，先到先得！\n✅ 新老客户皆可参与\n✅ 无最低消费\n\n🏃‍♂️ 快来抢！名额有限，手慢无！\n📲 点击立即预订 👇`,
+    story: (p) => `👨‍🍳 15年只做一件事——\n\n让每一位客人吃到最正宗的味道。\n\n${p}，坚持传统配方，不走捷径。\n朋友圈里的那碗汤，就是我们做的 🍲\n\n不信？来试试，不好吃不收钱！\n📲 了解更多 👇`,
+  },
+  retail: {
+    hot:   (p) => `🛍️ ${p} 现货热卖！\n\n品质有保障，价格超实惠！\n今天下单，快速配送到你手！ 📦\n\n✅ 正品保证\n✅ 7天退换\n✅ 全马包邮（满RM100）\n\n📲 点击查看全部商品 👇`,
+    promo: (p) => `💥 清仓大促！${p} 全线低至7折！\n\n⏰ 限时48小时，过期恢复原价！\n📦 库存有限，卖完即止！\n\n别等了，现在就来抢！\n📲 立即查看优惠 👇`,
+    story: (p) => `✨ 很多人问我们——\n为什么${p}这么多人买？\n\n答案很简单：品质说话。\n\n⭐ 超过1,000个真实好评\n⭐ 回头客占70%\n⭐ 我们对每件产品负责\n\n自己买过才知道好 👀\n📲 看看真实评价 👇`,
+  },
+  beauty: {
+    hot:   (p) => `💄 ${p}，让你每天都美美哒！\n\n天然成分，温和不刺激\n效果看得见，用了就回头 ✨\n\n🌟 全马客户已超过500+人体验\n💝 限量名额，立即预约！\n\n📲 点击了解详情 👇`,
+    promo: (p) => `🌟 新客专属！${p} 首次体验只需半价！\n\n🔥 限额仅剩20名！先到先得！\n✅ 专业美容师1对1服务\n✅ 天然产品，安全有效\n✅ 效果不满意全额退款\n\n⏰ 名额快满了，赶紧来！\n📲 立即预约 👇`,
+    story: (p) => `👩 我用${p}一个月后……\n\n朋友们都说我皮肤变好了！\n\n不是广告，是真实经历。\n从暗沉到透亮，我自己都吓到 😱\n\n📸 亲身对比照，绝不修图\n现在换你试试！\n📲 了解产品 👇`,
+  },
+  education: {
+    hot:   (p) => `📚 ${p}课程，从零到精通！\n\n专业导师带领，学会为止 💪\n\n✅ 小班教学，针对性强\n✅ 随时回看录播\n✅ 学完颁发证书\n✅ 免费试学一节课\n\n🎓 让自己升值，从现在开始！\n📲 报名免费试学 👇`,
+    promo: (p) => `⏰ 早鸟优惠！${p}课程现在报名省RM200！\n\n🔥 限额30名，截止本月底！\n✅ 报名立享专属学习资料\n✅ 1对1答疑，无限次\n✅ 证书认可，提升竞争力\n\n别让机会溜走！\n📲 立即锁定优惠 👇`,
+    story: (p) => `🎯 我的学生小明，3个月前还在担心——\n\n学了${p}之后，现在月入RM5,000+\n\n这不是鸡汤，是真实案例。\n\n技能决定收入上限。\n你准备好了吗？\n\n📲 了解课程详情 👇`,
+  },
+  property: {
+    hot:   (p) => `🏠 ${p}——绝佳位置，不容错过！\n\n📍 交通便利，生活配套完善\n🔑 发展商直销，价格透明\n💰 多种付款方案，月供无压力\n\n现在询问，免费安排参观！\n📲 点击了解详情 👇`,
+    promo: (p) => `🔑 限量发售！${p}特别优惠价！\n\n💰 首付低至10%\n🎁 发展商特别回赠，总值RM20,000\n⏰ 仅限本月，先登记先选房！\n\n好房不等人，把握机会！\n📲 立即登记 👇`,
+    story: (p) => `💡 我们帮助500+家庭在马来西亚找到理想住所\n\n买房不只是投资——\n是为了让家人住得更舒适。\n\n${p}就是这样的地方 🏡\n\n不知道从哪里开始？\n让我们帮你规划！\n📲 免费咨询 👇`,
+  },
+  other: {
+    hot:   (p) => `✅ ${p}——专业服务，品质保证！\n\n💼 经验丰富，口碑良好\n⚡ 快速响应，效率高\n🎯 针对你的需求定制方案\n\n立即联系，获取专属报价！\n📲 点击了解更多 👇`,
+    promo: (p) => `🎁 限时特惠！${p}现在联系立享优惠！\n\n⏰ 活动截止本月底\n✅ 老客户介绍新客，双方均享额外折扣\n✅ 首次合作特别价格\n\n机会难得，赶快联系我们！\n📲 立即咨询 👇`,
+    story: (p) => `🌟 我们已帮助超过200家商家和客户\n解决了${p}的问题。\n\n他们说的最多的话是——\n"应该早点找你们！"\n\n查看我们的真实案例和评价 ⭐⭐⭐⭐⭐\n📲 了解详情 👇`,
+  },
+};
+
+/* ── Step Navigation ── */
+let currentStep = 1;
+
+function updateProgress(step) {
+  for (let i = 1; i <= 4; i++) {
+    const dot = document.getElementById(`dot-${i}`);
+    dot.className = 'step-dot' + (i < step ? ' done' : i === step ? ' active' : '');
+  }
+  document.getElementById('progress-label').textContent = `第 ${step} 步，共 4 步`;
+}
+
+function goStep(n) {
+  if (n === 2 && !state.industry) {
+    shake(document.getElementById('industry-grid'));
+    return;
+  }
+  document.getElementById(`step-${currentStep}`).classList.remove('active');
+  currentStep = n;
+  document.getElementById(`step-${n}`).classList.add('active');
+  updateProgress(n);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function shake(el) {
+  el.style.animation = 'none';
+  el.offsetHeight;
+  el.style.animation = 'shake 0.4s ease';
+  el.addEventListener('animationend', () => el.style.animation = '', { once: true });
+}
+
+/* ── Industry Selection ── */
+function selectIndustry(card) {
+  document.querySelectorAll('.industry-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  state.industry = card.dataset.val;
+}
+
+/* ── Budget Slider ── */
+function updateBudget(idx) {
+  state.budget = BUDGETS[idx];
+  document.getElementById('budget-display').textContent =
+    'RM ' + state.budget.toLocaleString() + (state.budget >= 10000 ? '+' : '');
+}
+
+/* ── Region / Platform Buttons ── */
+function selectOpt(btn, group) {
+  document.querySelectorAll(`#${group}-group .opt-btn`).forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  state[group] = btn.dataset.val;
+}
+
+/* ── Generate Report ── */
+function generateReport() {
+  state.productName = document.getElementById('product-name').value.trim() || '你的产品';
+  state.productDesc = document.getElementById('product-desc').value.trim();
+
+  // Hide wizard steps
+  document.getElementById(`step-${currentStep}`).classList.remove('active');
+  document.getElementById('progress-bar').style.display = 'none';
+
+  // Show loading
+  const loading = document.getElementById('loading-screen');
+  loading.style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  setTimeout(() => {
+    loading.style.display = 'none';
+    renderResults();
+    document.getElementById('results-screen').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 2400);
+}
+
+function renderResults() {
+  const ind = INDUSTRY_DATA[state.industry];
+  const pName = state.productName;
+
+  // Calculations
+  const reach     = Math.round(state.budget * ind.reachMult * PLATFORM_MULT[state.platform] * REGION_MULT[state.region]);
+  const clicks    = Math.round(reach * ind.ctr);
+  const customers = Math.round(clicks * ind.conv);
+  const revenue   = customers * ind.aov;
+  const roi       = (revenue / state.budget).toFixed(1);
+
+  // Header
+  document.getElementById('r-title').textContent = `${pName} 的广告潜力报告`;
+  document.getElementById('r-subtitle').textContent =
+    `${ind.name} · RM${state.budget.toLocaleString()}/月 · ${regionLabel(state.region)} · ${platformLabel(state.platform)}`;
+
+  // Stats
+  document.getElementById('r-reach').textContent     = reach.toLocaleString() + ' 人';
+  document.getElementById('r-clicks').textContent    = clicks.toLocaleString() + ' 次';
+  document.getElementById('r-customers').textContent = customers.toLocaleString() + ' 人';
+  document.getElementById('r-roi').textContent       = roi + 'x';
+
+  // Copy
+  const tpl = COPY_TEMPLATES[state.industry];
+  document.getElementById('copy-hot').textContent   = tpl.hot(pName);
+  document.getElementById('copy-promo').textContent = tpl.promo(pName);
+  document.getElementById('copy-story').textContent = tpl.story(pName);
+
+  // Strategy
+  document.getElementById('r-time').textContent     = ind.time;
+  document.getElementById('r-freq').textContent     = ind.freq;
+  document.getElementById('r-platform').textContent = ind.platform;
+
+  // Animate numbers
+  animateNumbers();
+}
+
+function animateNumbers() {
+  ['r-reach','r-clicks','r-customers'].forEach(id => {
+    const el = document.getElementById(id);
+    const target = parseInt(el.textContent.replace(/[^0-9]/g, ''));
+    let current = 0;
+    const step = Math.ceil(target / 40);
+    const timer = setInterval(() => {
+      current = Math.min(current + step, target);
+      el.textContent = current.toLocaleString() + (id === 'r-customers' ? ' 人' : id === 'r-clicks' ? ' 次' : ' 人');
+      if (current >= target) clearInterval(timer);
+    }, 30);
+  });
+}
+
+function regionLabel(r) {
+  return { local: '本地商圈', city: '特定城市', national: '全马' }[r];
+}
+function platformLabel(p) {
+  return { telegram: 'Telegram', facebook: 'Facebook', instagram: 'Instagram', combo: '组合推广' }[p];
+}
+
+/* ── Copy to Clipboard ── */
+function copyText(btn, elId) {
+  const text = document.getElementById(elId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓ 已复制';
+    btn.classList.add('copied');
+    showToast();
+    setTimeout(() => {
+      btn.textContent = '复制';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+let toastTimer;
+function showToast() {
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ── Restart ── */
+function restartWizard() {
+  state.industry = null; state.budget = 1000; state.region = 'local';
+  state.platform = 'telegram'; state.productName = ''; state.productDesc = '';
+
+  document.getElementById('results-screen').style.display = 'none';
+  document.getElementById('progress-bar').style.display = 'flex';
+  document.querySelectorAll('.industry-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('budget-slider').value = 2;
+  updateBudget(2);
+  document.getElementById('product-name').value = '';
+  document.getElementById('product-desc').value = '';
+
+  currentStep = 1;
+  document.getElementById('step-1').classList.add('active');
+  updateProgress(1);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Shake animation
+const style = document.createElement('style');
+style.textContent = '@keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-6px)} 80%{transform:translateX(6px)} }';
+document.head.appendChild(style);
+
+// Init
+updateProgress(1);
+</script>
+</body>
+</html>

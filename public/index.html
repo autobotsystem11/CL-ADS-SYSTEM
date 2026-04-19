@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CL SDN BHD — 广告管理后台</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-badge">CL</div>
+      <span>CL SDN BHD</span>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" onclick="showTab('dashboard')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        仪表板
+      </button>
+      <button class="nav-item" onclick="showTab('clients')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        客户管理
+      </button>
+      <button class="nav-item" onclick="showTab('campaigns')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        推广项目
+      </button>
+      <button class="nav-item" onclick="showTab('metrics')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+        数据录入
+      </button>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- ── Dashboard Tab ───────────────────────────── -->
+    <div id="tab-dashboard">
+      <div class="topbar">
+        <h1>📊 广告总览</h1>
+        <div class="topbar-actions">
+          <select id="days-filter" onchange="loadDashboard()" style="width:auto">
+            <option value="7">最近 7 天</option>
+            <option value="14">最近 14 天</option>
+            <option value="30">最近 30 天</option>
+          </select>
+        </div>
+      </div>
+      <div class="content">
+        <!-- Stat cards -->
+        <div class="stats-grid" id="stat-cards">
+          <div class="stat-card"><div class="stat-label">总点击</div><div class="stat-value stat-orange" id="s-clicks">—</div><div class="stat-sub">所有项目</div></div>
+          <div class="stat-card"><div class="stat-label">总发送</div><div class="stat-value stat-blue"   id="s-messages">—</div><div class="stat-sub">消息条数</div></div>
+          <div class="stat-card"><div class="stat-label">新增订阅</div><div class="stat-value stat-green"  id="s-subs">—</div><div class="stat-sub">所有项目</div></div>
+          <div class="stat-card"><div class="stat-label">活跃项目</div><div class="stat-value stat-purple" id="s-camps">—</div><div class="stat-sub">个推广</div></div>
+        </div>
+
+        <!-- Chart -->
+        <div class="card section-gap">
+          <div class="card-header">
+            <div class="card-title">点击趋势</div>
+          </div>
+          <canvas id="click-chart" height="80"></canvas>
+        </div>
+
+        <!-- Campaign table -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">推广项目数据</div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>客户</th>
+                  <th>项目名称</th>
+                  <th>平台</th>
+                  <th>点击</th>
+                  <th>发送</th>
+                  <th>新增订阅</th>
+                  <th>追踪链接</th>
+                  <th>客户报告</th>
+                </tr>
+              </thead>
+              <tbody id="dashboard-table">
+                <tr><td colspan="8" class="empty-state">加载中...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Clients Tab ──────────────────────────────── -->
+    <div id="tab-clients" class="hidden">
+      <div class="topbar">
+        <h1>👤 客户管理</h1>
+        <button class="btn btn-primary" onclick="openModal('modal-add-client')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          新增客户
+        </button>
+      </div>
+      <div class="content">
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>客户名称</th><th>联系方式</th><th>注册时间</th><th>客户报告链接</th><th>操作</th></tr>
+              </thead>
+              <tbody id="clients-table">
+                <tr><td colspan="5" class="empty-state">加载中...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Campaigns Tab ────────────────────────────── -->
+    <div id="tab-campaigns" class="hidden">
+      <div class="topbar">
+        <h1>📣 推广项目</h1>
+        <button class="btn btn-primary" onclick="openModal('modal-add-campaign')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          新增项目
+        </button>
+      </div>
+      <div class="content">
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>客户</th><th>项目名称</th><th>平台</th><th>追踪链接</th><th>目标链接</th><th>操作</th></tr>
+              </thead>
+              <tbody id="campaigns-table">
+                <tr><td colspan="6" class="empty-state">加载中...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Metrics Tab ──────────────────────────────── -->
+    <div id="tab-metrics" class="hidden">
+      <div class="topbar"><h1>📥 每日数据录入</h1></div>
+      <div class="content">
+        <div class="card" style="max-width:560px">
+          <div class="card-header"><div class="card-title">录入今日广告数据</div></div>
+          <p class="text-muted mt-1" style="margin-bottom:20px;font-size:13px;">
+            点击数据会自动追踪，这里只需录入发送消息数和新增订阅数。
+          </p>
+          <form id="metrics-form">
+            <div class="form-grid" style="grid-template-columns:1fr">
+              <div class="form-group">
+                <label>推广项目</label>
+                <select id="m-campaign" required>
+                  <option value="">— 选择项目 —</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>日期</label>
+                <input type="date" id="m-date" required>
+              </div>
+              <div class="form-group">
+                <label>发出消息数量（条）</label>
+                <input type="number" id="m-messages" min="0" placeholder="例：1200" required>
+              </div>
+              <div class="form-group">
+                <label>新增订阅用户（人）</label>
+                <input type="number" id="m-subs" min="0" placeholder="例：58" required>
+              </div>
+            </div>
+            <div class="modal-footer" style="margin-top:20px">
+              <button type="submit" class="btn btn-primary">💾 保存数据</button>
+            </div>
+          </form>
+          <div id="metrics-result" class="hidden mt-3" style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:12px;font-size:13px;color:#22c55e;"></div>
+        </div>
+
+        <!-- Telegram shortcut tip -->
+        <div class="card mt-3" style="max-width:560px;margin-top:16px">
+          <div class="card-header"><div class="card-title">💡 Telegram Bot 快速录入</div></div>
+          <p class="text-muted" style="font-size:13px;margin-bottom:8px">也可以直接发指令给你的 Bot：</p>
+          <code style="background:var(--bg3);padding:10px 14px;border-radius:8px;display:block;font-size:13px;color:var(--orange)">
+            /addmetrics &lt;追踪代码&gt; &lt;发送数&gt; &lt;新增订阅&gt;
+          </code>
+          <p class="text-muted mt-2" style="font-size:12px">例：/addmetrics abc1234 1200 58</p>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.main -->
+</div><!-- /.app -->
+
+<!-- ── Modal: Add Client ─────────────────────────────────── -->
+<div id="modal-add-client" class="modal-overlay hidden">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-add-client')">✕</button>
+    <h2>➕ 新增客户</h2>
+    <form id="client-form">
+      <div class="form-grid" style="grid-template-columns:1fr">
+        <div class="form-group">
+          <label>客户名称 *</label>
+          <input type="text" id="c-name" placeholder="例：陈老板餐厅" required>
+        </div>
+        <div class="form-group">
+          <label>联系方式（可选）</label>
+          <input type="text" id="c-contact" placeholder="例：+60123456789">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('modal-add-client')">取消</button>
+        <button type="submit" class="btn btn-primary">确认添加</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Modal: Add Campaign ───────────────────────────────── -->
+<div id="modal-add-campaign" class="modal-overlay hidden">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-add-campaign')">✕</button>
+    <h2>➕ 新增推广项目</h2>
+    <form id="campaign-form">
+      <div class="form-grid" style="grid-template-columns:1fr">
+        <div class="form-group">
+          <label>所属客户 *</label>
+          <select id="cp-client" required>
+            <option value="">— 选择客户 —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>项目名称 *</label>
+          <input type="text" id="cp-name" placeholder="例：4月份 Telegram 推广" required>
+        </div>
+        <div class="form-group">
+          <label>平台</label>
+          <select id="cp-platform">
+            <option value="telegram">Telegram</option>
+            <option value="facebook">Facebook</option>
+            <option value="instagram">Instagram</option>
+            <option value="other">其他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>目标链接 * <span class="text-muted">（用户点击后跳转到哪里）</span></label>
+          <input type="url" id="cp-url" placeholder="https://..." required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('modal-add-campaign')">取消</button>
+        <button type="submit" class="btn btn-primary">确认添加</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script src="/js/dashboard.js"></script>
+</body>
+</html>

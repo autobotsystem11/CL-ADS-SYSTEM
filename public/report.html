@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>广告数据报告 — CL SDN BHD</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    body { background: #0a0a14; }
+    .report-wrap { max-width: 860px; margin: 0 auto; padding: 40px 20px 80px; }
+    .report-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 40px; flex-wrap: wrap; gap: 16px;
+    }
+    .report-brand { display: flex; align-items: center; gap: 12px; }
+    .report-brand .logo-badge { width: 40px; height: 40px; font-size: 14px; }
+    .report-brand h2 { font-size: 16px; font-weight: 700; }
+    .report-brand p { font-size: 12px; color: var(--muted); }
+    .report-meta { text-align: right; }
+    .report-meta .client-name { font-size: 22px; font-weight: 800; }
+    .report-meta .date-range  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .divider { height: 1px; background: var(--border); margin: 32px 0; }
+    .campaigns-grid { display: grid; gap: 16px; }
+    .campaign-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .campaign-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .campaign-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 16px 0; }
+    .c-metric { background: var(--bg3); border-radius: 10px; padding: 14px; text-align: center; }
+    .c-metric .val { font-size: 24px; font-weight: 800; }
+    .c-metric .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .footer-note { text-align: center; color: var(--muted); font-size: 12px; margin-top: 48px; }
+    #error-state { text-align: center; padding: 80px 20px; color: var(--muted); }
+    @media (max-width: 500px) { .campaign-metrics { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+<div class="report-wrap">
+  <div id="loading" style="text-align:center;padding:80px;color:var(--muted)">
+    <div class="spinner" style="margin:0 auto 16px"></div>
+    正在加载报告...
+  </div>
+  <div id="error-state" class="hidden">
+    <p style="font-size:24px">⚠️</p>
+    <p>无效的报告链接，请联系 CL SDN BHD 获取正确链接。</p>
+  </div>
+  <div id="report-content" class="hidden">
+    <!-- Header -->
+    <div class="report-header">
+      <div class="report-brand">
+        <div class="logo-badge" style="background:var(--orange);width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:white">CL</div>
+        <div>
+          <h2>CL SDN BHD</h2>
+          <p>广告推广数据报告</p>
+        </div>
+      </div>
+      <div class="report-meta">
+        <div class="client-name" id="r-client-name">—</div>
+        <div class="date-range" id="r-date-range">—</div>
+      </div>
+    </div>
+
+    <!-- Summary stats -->
+    <div class="stats-grid" id="r-stats"></div>
+
+    <div class="divider"></div>
+
+    <!-- Click trend chart -->
+    <div class="card section-gap">
+      <div class="card-header">
+        <div class="card-title">过去 30 天点击趋势</div>
+      </div>
+      <canvas id="r-chart" height="90"></canvas>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Per-campaign breakdown -->
+    <h3 style="font-size:14px;font-weight:700;margin-bottom:16px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">推广项目明细</h3>
+    <div class="campaigns-grid" id="r-campaigns"></div>
+
+    <div class="footer-note">
+      <p>此报告由 CL SDN BHD 提供 · 数据每日自动更新</p>
+      <p>如有疑问请联系你的客服专员</p>
+    </div>
+  </div>
+</div>
+<script src="/js/report.js"></script>
+</body>
+</html>
