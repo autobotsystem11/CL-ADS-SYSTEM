@@ -112,7 +112,23 @@ async function sendOrderApproved(order, creds) {
   await bot.sendMessage(CHAT_ID, text, { parse_mode: 'Markdown' });
 }
 
-module.exports = { sendReport, sendOrderAlert, sendClientReports, sendOrderApproved };
+// ── Send credentials directly to client via Telegram ─────────
+async function sendClientCredentials(clientId, username, password) {
+  const { data: client } = await supabase
+    .from('clients').select('telegram_chat_id, name').eq('id', clientId).single();
+  if (!client?.telegram_chat_id) return false;
+  const text =
+    `🎉 *恭喜，${client.name}！你的订单已批准！*\n\n` +
+    `以下是你的 ADS REPORT 登入账号：\n\n` +
+    `🔑 账号：\`${username}\`\n` +
+    `🔑 密码：\`${password}\`\n\n` +
+    `🌐 登入：${process.env.BASE_URL}/portal\n\n` +
+    `如有问题请随时联系我们 😊`;
+  await bot.sendMessage(client.telegram_chat_id, text, { parse_mode: 'Markdown' });
+  return true;
+}
+
+module.exports = { sendReport, sendOrderAlert, sendClientReports, sendOrderApproved, sendClientCredentials };
 
 // ── New order alert ───────────────────────────────────────────
 async function sendOrderAlert(order) {
@@ -193,18 +209,70 @@ async function sendClientReports(dateStr) {
 
 // ── Bot commands ──────────────────────────────────────────────
 
-// /start — show help + chat ID (so clients can share their ID with admin)
+// /start — welcome + instructions for clients
 bot.onText(/\/start/, (msg) => {
   bot.sendMessage(msg.chat.id,
-    `👋 *CL SDN BHD 广告日报 Bot*\n\n` +
-    `📌 你的 Chat ID：\`${msg.chat.id}\`\n` +
-    `请将此 ID 发给 CL SDN BHD 以接收每日广告报告\n\n` +
-    `可用指令：\n` +
-    `📊 /report — 昨日所有项目数据\n` +
-    `📅 /report YYYY-MM-DD — 指定日期报告\n` +
-    `➕ /addmetrics <代码> <发送数> <新订阅> — 手动录入今日数据\n` +
-    `📋 /campaigns — 列出所有追踪链接\n` +
-    `\nBase URL: ${process.env.BASE_URL}`,
+    `👋 欢迎使用 *CL SDN BHD 广告系统 Bot*！\n\n` +
+    `如果你刚刚在网站下单，请按照以下步骤操作：\n\n` +
+    `1️⃣ 发送指令注册账号：\n\`/register 你的下单姓名\`\n\n` +
+    `2️⃣ 发送付款截图给我们\n\n` +
+    `3️⃣ 审批后我们会立即发送你的 ADS REPORT 账号密码 ✅\n\n` +
+    `─────────────\n` +
+    `📌 你的 Chat ID：\`${msg.chat.id}\``,
+    { parse_mode: 'Markdown' }
+  );
+});
+
+// /register <name> — client registers their Telegram so bot can send credentials
+bot.onText(/\/register (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const name   = match[1].trim();
+
+  const { data: clients } = await supabase
+    .from('clients')
+    .select('id, name')
+    .ilike('name', `%${name}%`)
+    .limit(1);
+
+  if (clients && clients[0]) {
+    await supabase.from('clients')
+      .update({ telegram_chat_id: String(chatId) })
+      .eq('id', clients[0].id);
+
+    bot.sendMessage(chatId,
+      `✅ *注册成功！*\n\n` +
+      `已绑定客户：${clients[0].name}\n\n` +
+      `请现在发送你的付款截图给我，我们审批后会立即发送 ADS REPORT 账号密码给你 🎉`,
+      { parse_mode: 'Markdown' }
+    );
+
+    if (CHAT_ID) {
+      bot.sendMessage(CHAT_ID,
+        `📌 客户已注册 Telegram\n客户：${clients[0].name}\nChat ID：${chatId}`,
+      );
+    }
+  } else {
+    bot.sendMessage(chatId,
+      `⚠️ 找不到 *"${name}"* 的下单记录。\n\n请确认你填写的姓名与下单时一致，或联系客服。`,
+      { parse_mode: 'Markdown' }
+    );
+  }
+});
+
+// Receive payment receipt photos — forward to admin
+bot.on('message', async (msg) => {
+  if (!msg.photo) return;
+  const chatId = msg.chat.id;
+
+  if (CHAT_ID && String(chatId) !== String(CHAT_ID)) {
+    await bot.forwardMessage(CHAT_ID, chatId, msg.message_id);
+    await bot.sendMessage(CHAT_ID,
+      `📸 收到付款截图\nChat ID：${chatId}${msg.caption ? '\n备注：' + msg.caption : ''}\n\n请在后台核对并批准对应订单。`
+    );
+  }
+
+  bot.sendMessage(chatId,
+    `✅ 收到付款截图！我们将尽快审核。\n\n如还未注册，请发送：\n\`/register 你的下单姓名\``,
     { parse_mode: 'Markdown' }
   );
 });

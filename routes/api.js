@@ -337,10 +337,13 @@ router.patch('/orders/:id', async (req, res) => {
       if (clientId) {
         const creds = await createClientCredentials(clientId, clientName);
 
-        // Notify admin via Telegram with credentials
+        // Notify admin + send credentials to client via Telegram
         try {
           const bot = require('../bot');
           if (bot.sendOrderApproved) bot.sendOrderApproved(order, creds);
+          if (!creds.alreadyExisted && creds.password && bot.sendClientCredentials) {
+            bot.sendClientCredentials(clientId, creds.username, creds.password);
+          }
         } catch (_) {}
 
         return res.json({ ...order, credentials: creds });
