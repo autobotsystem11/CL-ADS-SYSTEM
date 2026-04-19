@@ -32,7 +32,9 @@ app.listen(PORT, () => {
   console.log(`   Client report   : http://localhost:${PORT}/report?id=<clientId>`);
   console.log(`   Tracking link   : http://localhost:${PORT}/go/<code>\n`);
 
-  // Start Telegram bot + daily scheduler
-  require('./bot');
-  require('./scheduler');
+  // Start Telegram bot + daily scheduler (local only, not on Vercel serverless)
+  if (!process.env.VERCEL) {
+    require('./bot');
+    require('./scheduler');
+  }
 });
